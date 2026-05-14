@@ -1,0 +1,8 @@
+node_modules/
+tmp/
+logs/
+*.log
+.env
+.claude
+conversation-logs/
+.DS_Store
