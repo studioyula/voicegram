@@ -2,6 +2,7 @@ node_modules/
 tmp/
 logs/
 scripts/
+.cursor/
 *.log
 .env
 .claude
