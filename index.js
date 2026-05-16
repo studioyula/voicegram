@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import "dotenv/config";
 /**
- * coloso-ae-mcp v3.0 — Adobe After Effects MCP Server (Student Edition)
+ * student-ae-mcp v3.0 — Adobe After Effects MCP Server (Student Edition)
  *
  * 2개 툴: scan / execute
  * + 내장 벡터DB로 AE API 문서 자동 조회
@@ -34,7 +34,7 @@ let MOTION_LIB_CODE = "";
 try {
   MOTION_LIB_CODE = fs.readFileSync(MOTION_LIB_PATH, "utf-8");
 } catch (e) {
-  console.error(`[coloso-ae-mcp] helpers/motion.jsx 로드 실패: ${e.message}`);
+  console.error(`[student-ae-mcp] helpers/motion.jsx 로드 실패: ${e.message}`);
 }
 
 // ─── 설정 ─────────────────────────────────────────────────────────────────────
@@ -313,12 +313,12 @@ function executeInAE(code, timeoutMs = 10000) {
     if (IS_WIN) {
       const aePath = AE_PATH || "AfterFX.exe";
       execFile(aePath, ["-r", scriptPath], { timeout: 10000 }, (err) => {
-        if (err) console.error(`[coloso-ae-mcp] AE 오류: ${err.message}`);
+        if (err) console.error(`[student-ae-mcp] AE 오류: ${err.message}`);
       });
     } else {
       const cmd = `osascript -e 'tell application "${AE_APP}" to DoScriptFile "${scriptPath.replace(/'/g, "\\'")}"'`;
       exec(cmd, { timeout: 10000 }, (err) => {
-        if (err) console.error(`[coloso-ae-mcp] osascript 오류: ${err.message}`);
+        if (err) console.error(`[student-ae-mcp] osascript 오류: ${err.message}`);
       });
     }
 
@@ -341,7 +341,7 @@ function executeInAE(code, timeoutMs = 10000) {
 
 // ─── MCP 도구 등록 ──
 const mcp = new McpServer({
-  name: "coloso-ae-mcp",
+  name: "student-ae-mcp",
   version: "3.0.0",
   description: "Adobe MCP — AE 전용 (scan/execute)",
 });
@@ -491,33 +491,33 @@ function startBridgeServer() {
   });
 
   const server = app.listen(BRIDGE_PORT, () => {
-    console.error(`[coloso-ae-mcp] 브릿지 서버: http://localhost:${BRIDGE_PORT}`);
+    console.error(`[student-ae-mcp] 브릿지 서버: http://localhost:${BRIDGE_PORT}`);
   });
 
   server.on("error", (err) => {
     if (err && err.code === "EADDRINUSE") {
       console.error(
-        `[coloso-ae-mcp] 브릿지 포트 ${BRIDGE_PORT} 사용 중 - 브릿지 없이 MCP(stdio)만 실행합니다.`
+        `[student-ae-mcp] 브릿지 포트 ${BRIDGE_PORT} 사용 중 - 브릿지 없이 MCP(stdio)만 실행합니다.`
       );
       return;
     }
-    console.error(`[coloso-ae-mcp] 브릿지 서버 오류: ${err.message}`);
+    console.error(`[student-ae-mcp] 브릿지 서버 오류: ${err.message}`);
   });
 }
 
 // ─── 진입점 ───────────────────────────────────────────────────────────────────
 async function main() {
-  console.error(`[coloso-ae-mcp] v3.0 시작 중... (AE: ${AE_APP})`);
-  console.error(`[coloso-ae-mcp] 벡터DB: ${isIndexBuilt() ? "빌드됨" : "미빌드 (node vectordb/build.js 실행 필요)"}`);
+  console.error(`[student-ae-mcp] v3.0 시작 중... (AE: ${AE_APP})`);
+  console.error(`[student-ae-mcp] 벡터DB: ${isIndexBuilt() ? "빌드됨" : "미빌드 (node vectordb/build.js 실행 필요)"}`);
 
   startBridgeServer();
 
   const transport = new StdioServerTransport();
   await mcp.connect(transport);
-  console.error("[coloso-ae-mcp] MCP 서버 실행 중 (stdio) — 2 tools: scan, execute");
+  console.error("[student-ae-mcp] MCP 서버 실행 중 (stdio) — 2 tools: scan, execute");
 }
 
 main().catch((e) => {
-  console.error("[coloso-ae-mcp] 치명적 오류:", e);
+  console.error("[student-ae-mcp] 치명적 오류:", e);
   process.exit(1);
 });
