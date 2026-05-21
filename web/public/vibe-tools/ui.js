@@ -20,6 +20,13 @@ var VibeUI = (function () {
     els.progress = document.getElementById("progress-bar");
     els.debug = document.getElementById("debug-bands");
     els.status = document.getElementById("status-text");
+    audio.onMicReady = function () {
+      els.status.textContent = "MIC READY";
+    };
+    audio.onMicError = function (err) {
+      els.status.textContent =
+        "MIC ERROR — " + (err && err.message ? err.message : "CHECK PERMISSION");
+    };
 
     els.sourceMic.onclick = function () { setSource("mic"); };
     els.sourceFile.onclick = function () { setSource("file"); };
@@ -169,7 +176,6 @@ var VibeUI = (function () {
   function onToggle() {
     var on = audio.toggleEnabled();
     updateToggleLabel();
-    if (on && audio.sourceMode === "mic") refreshMicDevices(false);
     els.status.textContent = on ? "ANALYSIS ON" : "ANALYSIS OFF";
   }
 

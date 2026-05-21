@@ -1,5 +1,5 @@
 var VibeAudio = (function () {
-  var SILENCE_MIC = 0.003;
+  var SILENCE_MIC = 0.0008;
   var SILENCE_FILE = 8;
   var SAMPLE_RATE = 44100;
   var FFT_BINS = 128;
@@ -171,21 +171,11 @@ var VibeAudio = (function () {
   };
 
   AudioManager.prototype.requestMicPermission = function (onOk, onErr) {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (!navigator.mediaDevices) {
       if (onErr) onErr("이 브라우저는 마이크 접근을 지원하지 않습니다.");
       return;
     }
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then(function (stream) {
-        stream.getTracks().forEach(function (t) {
-          t.stop();
-        });
-        if (onOk) onOk();
-      })
-      .catch(function (e) {
-        if (onErr) onErr(e.message || "마이크 권한이 거부되었습니다.");
-      });
+    if (onOk) onOk();
   };
 
   AudioManager.prototype.listMicDevices = function (callback) {
@@ -276,10 +266,16 @@ var VibeAudio = (function () {
         self.micTimeData = new Uint8Array(self.micAnalyser.fftSize);
         self.micReady = true;
         console.log("[VOICEGRAM] native mic ready");
+        if (typeof self.onMicReady === "function") {
+          self.onMicReady();
+        }
       })
       .catch(function (err) {
         self.micReady = false;
         console.error("[VOICEGRAM] mic start failed", err);
+        if (typeof self.onMicError === "function") {
+          self.onMicError(err);
+        }
       });
   };
 
@@ -291,9 +287,7 @@ var VibeAudio = (function () {
       if (onError) onError(new Error("AUDIO FILE REQUIRED"));
       return;
     }
-    if (this.mic) {
-      this.stopMic();
-    }
+    this.stopMic();
     this.disconnectFile();
     this.sourceMode = "file";
     objectUrl = URL.createObjectURL(file);
@@ -459,7 +453,7 @@ var VibeAudio = (function () {
 
     var peak = Math.max(bass, mid, treble);
     var isSound = isMic
-      ? volume > SILENCE_MIC || peak > 3
+      ? volume > SILENCE_MIC || peak > 1
       : peak > SILENCE_FILE;
 
     var activeBands = [];
