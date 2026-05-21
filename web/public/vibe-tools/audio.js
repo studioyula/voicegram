@@ -48,9 +48,13 @@ var VibeAudio = (function () {
   AudioManager.prototype.connectFileToAnalyzer = function () {
     if (!this.soundFile || !this.fft) return;
     this.soundFile.disconnect();
-    this.soundFile.connect(this.fft);
+    if (typeof this.fft.setInput === "function") {
+      this.fft.setInput(this.soundFile);
+    }
     if (typeof p5 !== "undefined" && p5.soundOut) {
       this.soundFile.connect(p5.soundOut);
+    } else {
+      this.soundFile.connect();
     }
   };
 
@@ -139,6 +143,26 @@ var VibeAudio = (function () {
 
   AudioManager.prototype.listMicDevices = function (callback) {
     var self = this;
+    if (
+      navigator.mediaDevices &&
+      typeof navigator.mediaDevices.enumerateDevices === "function"
+    ) {
+      navigator.mediaDevices.enumerateDevices().then(function (devices) {
+        var sources = [];
+        var i;
+        for (i = 0; i < devices.length; i++) {
+          if (devices[i].kind === "audioinput") {
+            sources.push(devices[i]);
+          }
+        }
+        self.micSources = sources;
+        if (callback) callback(self.micSources);
+      }).catch(function () {
+        if (callback) callback([]);
+      });
+      return;
+    }
+
     if (!this.mic) this.mic = new p5.AudioIn();
     this.mic.getSources(function (sources) {
       self.micSources = sources || [];
@@ -160,9 +184,14 @@ var VibeAudio = (function () {
     this.sourceMode = "mic";
     this.micReady = false;
 
-    if (!this.mic) {
-      this.mic = new p5.AudioIn();
+    if (this.mic) {
+      try {
+        this.mic.stop();
+      } catch (e) {
+        console.warn("[VOICEGRAM] mic stop skipped", e);
+      }
     }
+    this.mic = new p5.AudioIn();
 
     function beginCapture() {
       if (
@@ -172,11 +201,18 @@ var VibeAudio = (function () {
         self.mic.setSource(self.selectedMicIndex);
       }
       self.mic.start(function () {
-        self.mic.connect(self.fft);
+        if (self.fft && typeof self.fft.setInput === "function") {
+          self.fft.setInput(self.mic);
+        } else if (typeof self.mic.connect === "function") {
+          self.mic.connect(self.fft);
+        }
         if (typeof self.mic.amp === "function") {
           self.mic.amp(3);
         }
         self.micReady = true;
+      }, function (err) {
+        self.micReady = false;
+        console.error("[VOICEGRAM] mic start failed", err);
       });
     }
 

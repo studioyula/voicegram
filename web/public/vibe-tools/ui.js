@@ -135,10 +135,16 @@ var VibeUI = (function () {
         audio.listMicDevices(function (sources) {
           els.micDevice.innerHTML = "";
           var i;
+          var label;
           for (i = 0; i < sources.length; i++) {
             var opt = document.createElement("option");
             opt.value = i;
-            opt.textContent = sources[i] || "MIC " + (i + 1);
+            if (typeof sources[i] === "string") {
+              label = sources[i];
+            } else {
+              label = sources[i].label || sources[i].deviceId || "";
+            }
+            opt.textContent = label || "MIC " + (i + 1);
             els.micDevice.appendChild(opt);
           }
           if (sources.length === 0) {
@@ -163,7 +169,7 @@ var VibeUI = (function () {
   function onToggle() {
     var on = audio.toggleEnabled();
     updateToggleLabel();
-    if (on && audio.sourceMode === "mic") refreshMicDevices(true);
+    if (on && audio.sourceMode === "mic") refreshMicDevices(false);
     els.status.textContent = on ? "ANALYSIS ON" : "ANALYSIS OFF";
   }
 

@@ -8,6 +8,13 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "status": 307,
+      "headers": {
+        "Location": "/vibe-tools/index.html"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "/web/$1"
     }
