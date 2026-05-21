@@ -3,20 +3,59 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VIBE TOOLS — 소리 반응형 그래픽</title>
+    <title>VOICEGRAM</title>
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body {
-        width: 100%; height: 100%; overflow: hidden;
-        background: #000; color: #fff;
-        font-family: system-ui, -apple-system, sans-serif;
+      :root {
+        --ui-bg: rgba(18, 18, 18, 0.85);
+        --ui-bg-hover: rgba(255, 255, 255, 0.08);
+        --ui-bg-active: rgba(255, 255, 255, 0.12);
+        --ui-border: rgba(255, 255, 255, 0.1);
+        --ui-text: rgba(255, 255, 255, 0.55);
+        --ui-text-bright: rgba(255, 255, 255, 0.85);
+        --ui-accent: rgba(255, 255, 255, 0.9);
+        --ui-font: "SF Mono", "JetBrains Mono", "Fira Code", "Menlo", monospace;
+        --ui-radius: 3px;
       }
-      #canvas-host { position: fixed; inset: 0; z-index: 0; }
-      #canvas-host canvas { display: block; }
-      .ui-layer { position: fixed; z-index: 10; pointer-events: none; }
-      .ui-layer > * { pointer-events: auto; }
 
-      .top-left { top: 16px; left: 16px; max-width: 280px; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0a0a0a;
+        color: var(--ui-text-bright);
+        font-family: var(--ui-font);
+      }
+
+      #canvas-host {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+      #canvas-host canvas {
+        display: block;
+      }
+
+      .ui-layer {
+        position: fixed;
+        z-index: 10;
+        pointer-events: none;
+      }
+      .ui-layer > * {
+        pointer-events: auto;
+      }
+
+      .top-left {
+        top: 16px;
+        left: 16px;
+        max-width: 300px;
+      }
       .top-center {
         top: 16px;
         left: 50%;
@@ -26,139 +65,318 @@
         top: 16px;
         right: 16px;
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
+        background: var(--ui-bg);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 4px 8px;
       }
       .bottom-center {
-        bottom: 20px;
+        bottom: 16px;
         left: 50%;
         transform: translateX(-50%);
         text-align: center;
       }
 
+      .brand {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        z-index: 10;
+        pointer-events: none;
+        font-family: var(--ui-font);
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.2);
+      }
+
+      button {
+        font-family: var(--ui-font);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ui-text);
+        background: transparent;
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      }
+
+      button:hover {
+        color: var(--ui-text-bright);
+        background: var(--ui-bg-hover);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      button.active {
+        color: var(--ui-accent);
+        background: var(--ui-bg-active);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
       .panel-source {
         display: flex;
-        gap: 4px;
+        gap: 2px;
         align-items: center;
+        background: var(--ui-bg);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 2px;
       }
+
       .source-tabs {
         display: flex;
         gap: 0;
       }
+
+      .tab-btn {
+        border: none;
+        border-radius: 2px;
+        padding: 5px 10px;
+        font-size: 10px;
+      }
+
+      .tab-btn.active {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--ui-text-bright);
+      }
+
+      .toggle-btn {
+        border: none;
+        border-left: 1px solid var(--ui-border);
+        border-radius: 0;
+        padding: 5px 10px;
+        font-size: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+      }
+
+      .toggle-btn.on {
+        color: var(--ui-text-bright);
+        background: transparent;
+      }
+
+      .toggle-btn.on::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #4ade80;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+
       .sub-controls {
-        margin-top: 8px;
+        margin-top: 6px;
+        padding: 8px;
+        background: var(--ui-bg);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
         width: 100%;
       }
-      .sub-controls.hidden { display: none; }
+      .sub-controls.hidden {
+        display: none;
+      }
 
-      .file-row { margin-bottom: 6px; }
-      .playback-row {
+      .file-row {
+        margin-bottom: 0;
+      }
+
+      .playback-stack {
         display: flex;
+        flex-direction: column;
         gap: 8px;
-        align-items: center;
-      }
-      .playback-row input[type="range"] {
-        flex: 1;
-        min-width: 80px;
-        accent-color: #ff8866;
+        margin-top: 8px;
       }
 
-      .mode-selector {
-        display: flex;
-        gap: 4px;
+      #btn-play-pause {
+        font-size: 10px;
+        padding: 4px 10px;
+        width: 100%;
       }
-      .palette-dots {
-        display: flex;
-        gap: 6px;
-        align-items: center;
+
+      #file-input {
+        font-family: var(--ui-font);
+        font-size: 10px;
+        color: var(--ui-text);
+        width: 100%;
       }
-      .pal-dot {
-        width: 20px;
-        height: 20px;
+
+      #file-input::file-selector-button {
+        font-family: var(--ui-font);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ui-text);
+        background: transparent;
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 4px 8px;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+
+      #file-input::file-selector-button:hover {
+        color: var(--ui-text-bright);
+        background: var(--ui-bg-hover);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .sub-controls input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 1px;
+        outline: none;
+        margin: 0;
+      }
+
+      .sub-controls input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        border: 2px solid rgba(255,255,255,0.3);
+        background: var(--ui-text-bright);
         cursor: pointer;
-        padding: 0;
-      }
-      .pal-dot.active {
-        border-color: #fff;
-        box-shadow: 0 0 6px rgba(255,255,255,0.5);
       }
 
-      button, .tab-btn, .mode-btn {
-        border: 1px solid rgba(255,255,255,0.25);
-        background: rgba(0,0,0,0.6);
-        color: #fff;
-        padding: 6px 10px;
-        border-radius: 8px;
-        font-size: 12px;
+      .sub-controls input[type="range"]::-moz-range-track {
+        height: 2px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 1px;
+      }
+
+      .sub-controls input[type="range"]::-moz-range-thumb {
+        width: 8px;
+        height: 8px;
+        border: none;
+        border-radius: 50%;
+        background: var(--ui-text-bright);
         cursor: pointer;
-        backdrop-filter: blur(8px);
-      }
-      button:hover, .tab-btn:hover, .mode-btn:hover {
-        background: rgba(255,255,255,0.12);
-      }
-      button.active, .tab-btn.active, .mode-btn.active {
-        background: rgba(255,120,80,0.35);
-        border-color: #ffaa88;
-      }
-      .mode-btn.active {
-        background: rgba(255,120,80,0.45);
-        border-color: #ffaa88;
-        font-weight: 600;
-      }
-      #btn-toggle.on {
-        background: rgba(80,220,140,0.35);
-        border-color: #88ffbb;
       }
 
       #mic-device {
         width: 100%;
         padding: 6px 8px;
-        border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.25);
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        font-size: 12px;
+        border-radius: var(--ui-radius);
+        border: 1px solid var(--ui-border);
+        background: rgba(10, 10, 10, 0.6);
+        color: var(--ui-text);
+        font-family: var(--ui-font);
+        font-size: 10px;
+        letter-spacing: 0.03em;
       }
-      #file-input { font-size: 12px; color: #ccc; max-width: 100%; }
+
+      .mode-selector {
+        display: flex;
+        gap: 0;
+        background: var(--ui-bg);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
+        padding: 2px;
+      }
+
+      .mode-btn {
+        border: none;
+        border-radius: 2px;
+        padding: 6px 16px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+      }
+
+      .mode-btn.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--ui-accent);
+      }
+
+      .palette-dots {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding-right: 8px;
+        border-right: 1px solid var(--ui-border);
+      }
+
+      button.pal-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        cursor: pointer;
+        padding: 0;
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 0;
+        line-height: 0;
+        transition: border-color 0.15s ease, transform 0.15s ease;
+      }
+
+      button.pal-dot:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: scale(1.15);
+        background: transparent;
+      }
+
+      button.pal-dot.active {
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+        color: transparent;
+        background: transparent;
+      }
+
+      #btn-clear,
+      #btn-capture {
+        border: none;
+        font-size: 10px;
+        padding: 4px 8px;
+      }
+
+      #btn-clear:hover,
+      #btn-capture:hover {
+        background: var(--ui-bg-hover);
+      }
+
+      #status-text {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.03em;
+        margin-top: 6px;
+      }
 
       #debug-bands {
-        font-size: 10px;
-        padding: 8px 12px;
-        background: rgba(0,0,0,0.5);
-        border-radius: 8px;
+        font-family: var(--ui-font);
+        font-size: 9px;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.3);
+        padding: 6px 12px;
+        background: var(--ui-bg);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius);
         font-variant-numeric: tabular-nums;
         max-width: 96vw;
       }
-      #debug-bands.hidden { display: none; }
 
-      #status-text {
-        font-size: 11px;
-        color: rgba(255,255,255,0.5);
-        margin-top: 6px;
-      }
-      .brand {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 10;
-        font-size: 11px;
-        letter-spacing: 0.2em;
-        color: rgba(255,255,255,0.35);
-        pointer-events: none;
+      #debug-bands.hidden {
+        display: none;
       }
     </style>
   </head>
   <body>
     <div id="canvas-host"></div>
 
-    <!-- 상단 왼쪽: 입력 소스 -->
     <div class="ui-layer top-left">
       <div class="panel-source">
         <div class="source-tabs">
-          <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">🎤 마이크</button>
-          <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">📁 파일</button>
+          <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
+          <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
         </div>
         <button id="btn-toggle" class="toggle-btn" type="button">OFF</button>
       </div>
@@ -167,8 +385,8 @@
         <div class="file-row">
           <input id="file-input" type="file" accept="audio/*" />
         </div>
-        <div class="playback-row">
-          <button id="btn-play-pause" type="button">▶ 재생</button>
+        <div class="playback-stack">
+          <button id="btn-play-pause" type="button">PLAY</button>
           <input id="progress-bar" type="range" min="0" max="1" step="0.001" value="0" />
         </div>
       </div>
@@ -177,37 +395,34 @@
         <select id="mic-device"></select>
       </div>
 
-      <p id="status-text">로딩 중…</p>
+      <p id="status-text">LOADING</p>
     </div>
 
-    <!-- 상단 중앙: 렌더링 모드 -->
     <div class="ui-layer top-center">
       <div class="mode-selector">
-        <button class="mode-btn active" type="button" data-mode="shape">Shape</button>
-        <button class="mode-btn" type="button" data-mode="mosaic">Mosaic</button>
+        <button class="mode-btn" type="button" data-mode="shape">SHAPE</button>
+        <button class="mode-btn active" type="button" data-mode="mosaic">MOSAIC</button>
       </div>
     </div>
 
-    <!-- 상단 오른쪽: 팔레트 + 액션 -->
     <div class="ui-layer top-right">
       <div class="palette-dots">
-        <button class="pal-dot active" type="button" data-pal="mono" title="Mono" style="background:#ffffff"></button>
-        <button class="pal-dot" type="button" data-pal="neonFire" title="Fire" style="background:#ff4422"></button>
-        <button class="pal-dot" type="button" data-pal="ocean" title="Ocean" style="background:#4488ff"></button>
-        <button class="pal-dot" type="button" data-pal="candy" title="Candy" style="background:#ff66aa"></button>
-        <button class="pal-dot" type="button" data-pal="acid" title="Acid" style="background:#44ff66"></button>
-        <button class="pal-dot" type="button" data-pal="vivid" title="Vivid" style="background:linear-gradient(135deg,#ff2222 50%,#4488ff 50%)"></button>
+        <button class="pal-dot active" type="button" data-pal="mono" title="Mono" aria-label="Mono" style="background:#ffffff"></button>
+        <button class="pal-dot" type="button" data-pal="neonFire" title="Fire" aria-label="Fire" style="background:#ff4422"></button>
+        <button class="pal-dot" type="button" data-pal="ocean" title="Ocean" aria-label="Ocean" style="background:#4488ff"></button>
+        <button class="pal-dot" type="button" data-pal="candy" title="Candy" aria-label="Candy" style="background:#ff66aa"></button>
+        <button class="pal-dot" type="button" data-pal="acid" title="Acid" aria-label="Acid" style="background:#44ff66"></button>
+        <button class="pal-dot" type="button" data-pal="vivid" title="Vivid" aria-label="Vivid" style="background:linear-gradient(135deg,#ff2222 50%,#4488ff 50%)"></button>
       </div>
       <button id="btn-clear" type="button">CLEAR</button>
-      <button id="btn-capture" type="button" title="PNG 저장">📷</button>
+      <button id="btn-capture" type="button" title="Save PNG">CAPTURE</button>
     </div>
 
-    <!-- 하단 중앙: 디버그 (기본 숨김, D키 토글) -->
     <div class="ui-layer bottom-center">
       <p id="debug-bands" class="hidden"></p>
     </div>
 
-    <div class="brand">VIBE TOOLS v1.5</div>
+    <div class="brand">VOICEGRAM v1.5</div>
 
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/addons/p5.sound.min.js"></script>

@@ -34,8 +34,8 @@ var VibeUI = (function () {
       updateToggleLabel();
       updatePlayLabel();
       els.status.textContent = audio.isPlaying
-        ? "재생 중 — 그래픽 생성"
-        : "일시정지";
+        ? "PLAYING"
+        : "PAUSED";
     };
     els.progress.onmousedown = function () {
       els.progress.dataset.seeking = "1";
@@ -73,7 +73,7 @@ var VibeUI = (function () {
         }
         this.classList.add("active");
         els.status.textContent =
-          mode === "mosaic" ? "Mosaic 모드" : "Shape 모드";
+          mode === "mosaic" ? "MODE — MOSAIC" : "MODE — SHAPE";
       };
     }
   }
@@ -109,7 +109,7 @@ var VibeUI = (function () {
   function onCapture() {
     if (!p5ref) return;
     p5ref.saveCanvas("vibe-tools-capture", "png");
-    els.status.textContent = "캡처 저장됨";
+    els.status.textContent = "CAPTURE SAVED";
   }
 
   function setSource(mode) {
@@ -120,12 +120,12 @@ var VibeUI = (function () {
     els.micControls.classList.toggle("hidden", mode !== "mic");
     if (mode === "mic") {
       els.status.textContent = audio.enabled
-        ? "마이크 연결 중…"
-        : "마이크 — ON 후 허용";
+        ? "MIC — CONNECTING"
+        : "MIC — ENABLE ANALYSIS";
       refreshMicDevices(false);
       if (audio.enabled) audio.startMic();
     } else {
-      els.status.textContent = "파일 업로드 후 ▶ 재생";
+      els.status.textContent = "FILE — LOAD THEN PLAY";
     }
   }
 
@@ -138,12 +138,12 @@ var VibeUI = (function () {
           for (i = 0; i < sources.length; i++) {
             var opt = document.createElement("option");
             opt.value = i;
-            opt.textContent = sources[i] || "마이크 " + (i + 1);
+            opt.textContent = sources[i] || "MIC " + (i + 1);
             els.micDevice.appendChild(opt);
           }
           if (sources.length === 0) {
             var empty = document.createElement("option");
-            empty.textContent = "마이크 없음";
+            empty.textContent = "NO MIC";
             els.micDevice.appendChild(empty);
           } else if (audio.selectedMicIndex == null) {
             audio.selectedMicIndex = 0;
@@ -155,7 +155,7 @@ var VibeUI = (function () {
         });
       },
       function (msg) {
-        els.status.textContent = "마이크 권한: " + msg;
+        els.status.textContent = "MIC PERMISSION — " + msg;
       }
     );
   }
@@ -164,7 +164,7 @@ var VibeUI = (function () {
     var on = audio.toggleEnabled();
     updateToggleLabel();
     if (on && audio.sourceMode === "mic") refreshMicDevices(true);
-    els.status.textContent = on ? "분석 ON" : "OFF";
+    els.status.textContent = on ? "ANALYSIS ON" : "ANALYSIS OFF";
   }
 
   function updateToggleLabel() {
@@ -173,21 +173,21 @@ var VibeUI = (function () {
   }
 
   function updatePlayLabel() {
-    els.playPause.textContent = audio.isPlaying ? "⏸ 일시정지" : "▶ 재생";
+    els.playPause.textContent = audio.isPlaying ? "PAUSE" : "PLAY";
   }
 
   function onFileSelected(e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
-    els.status.textContent = "로딩 중…";
+    els.status.textContent = "LOADING";
     audio.loadFile(
       file,
       function () {
-        els.status.textContent = "로드 완료 — ▶ 재생";
+        els.status.textContent = "LOADED — PRESS PLAY";
         updatePlayLabel();
       },
       function () {
-        els.status.textContent = "로드 실패";
+        els.status.textContent = "LOAD FAILED";
       }
     );
   }

@@ -2,7 +2,7 @@
   var audioManager;
   var shapeRenderer;
   var mosaicRenderer;
-  var currentMode = "shape";
+  var currentMode = "mosaic";
 
   window.VibeApp = {
     getMode: function () {
@@ -56,7 +56,7 @@
   window.addEventListener("DOMContentLoaded", function () {
     if (typeof p5 === "undefined") {
       document.getElementById("status-text").textContent =
-        "p5.js 로드 실패 — 새로고침 해주세요";
+        "P5 FAILED — RELOAD";
       return;
     }
     new p5(sketch);
