@@ -155,7 +155,8 @@ VibeRenderer.MosaicRenderer = (function () {
               0.45;
         }
 
-        if (colE < 0.03) continue;
+        colE = Math.max(colE, vol * 0.35);
+        if (colE < 0.01) continue;
 
         dc = c - cx;
         dr = r - cy;

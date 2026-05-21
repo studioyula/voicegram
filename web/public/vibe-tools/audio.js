@@ -13,6 +13,12 @@ var VibeAudio = (function () {
     this.prevTotalEnergy = 0;
     this.fft = null;
     this.mic = null;
+    this.micStream = null;
+    this.micNode = null;
+    this.micAnalyser = null;
+    this.micFreqData = null;
+    this.micTimeData = null;
+    this.nativeAudioContext = null;
     this.micSources = [];
     this.selectedMicIndex = null;
     this.soundFile = null;
@@ -43,6 +49,21 @@ var VibeAudio = (function () {
     if (typeof this.p.userStartAudio === "function") {
       this.p.userStartAudio();
     }
+    if (this.nativeAudioContext && this.nativeAudioContext.state === "suspended") {
+      this.nativeAudioContext.resume();
+    }
+  };
+
+  AudioManager.prototype.getNativeAudioContext = function () {
+    var AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return null;
+    if (!this.nativeAudioContext) {
+      this.nativeAudioContext = new AudioContextCtor();
+    }
+    if (this.nativeAudioContext.state === "suspended") {
+      this.nativeAudioContext.resume();
+    }
+    return this.nativeAudioContext;
   };
 
   AudioManager.prototype.connectFileToAnalyzer = function () {
@@ -82,13 +103,42 @@ var VibeAudio = (function () {
     }
   };
 
+  AudioManager.prototype.stopMic = function () {
+    if (this.mic) {
+      try {
+        this.mic.stop();
+      } catch (e) {
+        console.warn("[VOICEGRAM] p5 mic stop skipped", e);
+      }
+    }
+    if (this.micNode) {
+      try {
+        this.micNode.disconnect();
+      } catch (err) {
+        console.warn("[VOICEGRAM] mic node disconnect skipped", err);
+      }
+      this.micNode = null;
+    }
+    if (this.micStream) {
+      var tracks = this.micStream.getTracks();
+      var i;
+      for (i = 0; i < tracks.length; i++) {
+        tracks[i].stop();
+      }
+      this.micStream = null;
+    }
+    this.micAnalyser = null;
+    this.micFreqData = null;
+    this.micTimeData = null;
+    this.micReady = false;
+  };
+
   AudioManager.prototype.setSourceMode = function (mode) {
     if (mode === this.sourceMode) return;
     if (mode === "mic") {
       this.disconnectFile();
     } else if (this.mic) {
-      this.mic.stop();
-      this.micReady = false;
+      this.stopMic();
     }
     this.sourceMode = mode;
     if (this.enabled && mode === "mic") {
@@ -97,10 +147,7 @@ var VibeAudio = (function () {
   };
 
   AudioManager.prototype.stopSources = function () {
-    if (this.mic) {
-      this.mic.stop();
-      this.micReady = false;
-    }
+    this.stopMic();
     if (this.soundFile) {
       this.soundFile.stop();
       this.isPlaying = false;
@@ -179,46 +226,61 @@ var VibeAudio = (function () {
 
   AudioManager.prototype.startMic = function () {
     var self = this;
+    var constraints;
+    var sourceInfo;
+    var deviceId;
+    var ctx;
     this.startContext();
     this.disconnectFile();
     this.sourceMode = "mic";
-    this.micReady = false;
+    this.stopMic();
 
-    if (this.mic) {
-      try {
-        this.mic.stop();
-      } catch (e) {
-        console.warn("[VOICEGRAM] mic stop skipped", e);
-      }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error("[VOICEGRAM] getUserMedia unavailable");
+      return;
     }
-    this.mic = new p5.AudioIn();
+    ctx = this.getNativeAudioContext();
+    if (!ctx) {
+      console.error("[VOICEGRAM] AudioContext unavailable");
+      return;
+    }
 
-    function beginCapture() {
-      if (
-        self.selectedMicIndex != null &&
-        typeof self.mic.setSource === "function"
-      ) {
-        self.mic.setSource(self.selectedMicIndex);
-      }
-      self.mic.start(function () {
-        if (self.fft && typeof self.fft.setInput === "function") {
-          self.fft.setInput(self.mic);
-        } else if (typeof self.mic.connect === "function") {
-          self.mic.connect(self.fft);
-        }
-        if (typeof self.mic.amp === "function") {
-          self.mic.amp(3);
-        }
+    sourceInfo = this.micSources[this.selectedMicIndex];
+    deviceId = sourceInfo && sourceInfo.deviceId ? sourceInfo.deviceId : null;
+    constraints = {
+      audio: deviceId
+        ? {
+            deviceId: { exact: deviceId },
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: true,
+          }
+        : {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: true,
+          },
+    };
+
+    navigator.mediaDevices
+      .getUserMedia(constraints)
+      .then(function (stream) {
+        if (ctx.state === "suspended") ctx.resume();
+        self.micStream = stream;
+        self.micNode = ctx.createMediaStreamSource(stream);
+        self.micAnalyser = ctx.createAnalyser();
+        self.micAnalyser.fftSize = 256;
+        self.micAnalyser.smoothingTimeConstant = 0.8;
+        self.micNode.connect(self.micAnalyser);
+        self.micFreqData = new Uint8Array(self.micAnalyser.frequencyBinCount);
+        self.micTimeData = new Uint8Array(self.micAnalyser.fftSize);
         self.micReady = true;
-      }, function (err) {
+        console.log("[VOICEGRAM] native mic ready");
+      })
+      .catch(function (err) {
         self.micReady = false;
         console.error("[VOICEGRAM] mic start failed", err);
       });
-    }
-
-    this.listMicDevices(function () {
-      beginCapture();
-    });
   };
 
   AudioManager.prototype.loadFile = function (file, onReady, onError) {
@@ -230,8 +292,7 @@ var VibeAudio = (function () {
       return;
     }
     if (this.mic) {
-      this.mic.stop();
-      this.micReady = false;
+      this.stopMic();
     }
     this.disconnectFile();
     this.sourceMode = "file";
@@ -314,6 +375,38 @@ var VibeAudio = (function () {
     };
   };
 
+  AudioManager.prototype.getNativeBandEnergy = function (spectrum, lowHz, highHz) {
+    var ctx = this.nativeAudioContext;
+    var fftSize = this.micAnalyser ? this.micAnalyser.fftSize : FFT_BINS * 2;
+    var sampleRate = ctx ? ctx.sampleRate : SAMPLE_RATE;
+    var start = Math.max(0, Math.floor(lowHz / (sampleRate / fftSize)));
+    var end = Math.min(
+      spectrum.length - 1,
+      Math.ceil(highHz / (sampleRate / fftSize))
+    );
+    var sum = 0;
+    var count = 0;
+    var i;
+    for (i = start; i <= end; i++) {
+      sum += spectrum[i] || 0;
+      count++;
+    }
+    return count > 0 ? VibeUtils.clamp((sum / count) * 1.35, 0, 255) : 0;
+  };
+
+  AudioManager.prototype.getNativeMicVolume = function () {
+    if (!this.micAnalyser || !this.micTimeData) return 0;
+    this.micAnalyser.getByteTimeDomainData(this.micTimeData);
+    var sum = 0;
+    var i;
+    var v;
+    for (i = 0; i < this.micTimeData.length; i++) {
+      v = (this.micTimeData[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.sqrt(sum / this.micTimeData.length);
+  };
+
   AudioManager.prototype.analyze = function () {
     if (!this.enabled || !this.fft) {
       this.lastAnalysis.isSound = false;
@@ -327,19 +420,37 @@ var VibeAudio = (function () {
       return this.lastAnalysis;
     }
 
-    var spectrum = this.fft.analyze();
-    var bass = this.fft.getEnergy("bass");
-    var mid = this.fft.getEnergy("mid");
-    var treble = this.fft.getEnergy("treble");
-    var features = this.computeSpectrumFeatures(spectrum);
     var isMic = this.sourceMode === "mic";
+    var spectrum;
+    var bass;
+    var mid;
+    var treble;
+    var features;
     var volume;
 
-    if (isMic && this.mic) {
-      volume = this.mic.getLevel();
+    if (isMic) {
+      if (this.micAnalyser && this.micFreqData) {
+        this.micAnalyser.getByteFrequencyData(this.micFreqData);
+        spectrum = Array.prototype.slice.call(this.micFreqData);
+        bass = this.getNativeBandEnergy(spectrum, 20, 250);
+        mid = this.getNativeBandEnergy(spectrum, 250, 2000);
+        treble = this.getNativeBandEnergy(spectrum, 2000, 8000);
+        volume = this.getNativeMicVolume();
+      } else {
+        spectrum = [];
+        bass = 0;
+        mid = 0;
+        treble = 0;
+        volume = 0;
+      }
     } else {
+      spectrum = this.fft.analyze();
+      bass = this.fft.getEnergy("bass");
+      mid = this.fft.getEnergy("mid");
+      treble = this.fft.getEnergy("treble");
       volume = (bass + mid + treble) / (3 * 255);
     }
+    features = this.computeSpectrumFeatures(spectrum);
 
     var totalEnergy = bass + mid + treble;
     var delta = Math.abs(totalEnergy - (this.prevTotalEnergy || 0));
