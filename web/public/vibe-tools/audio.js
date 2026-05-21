@@ -16,6 +16,7 @@ var VibeAudio = (function () {
     this.micSources = [];
     this.selectedMicIndex = null;
     this.soundFile = null;
+    this.fileObjectUrl = null;
     this.isPlaying = false;
     this.lastAnalysis = {
       bass: 0,
@@ -63,9 +64,17 @@ var VibeAudio = (function () {
 
   AudioManager.prototype.disconnectFile = function () {
     if (this.soundFile) {
-      this.soundFile.stop();
-      this.soundFile.disconnect();
+      try {
+        this.soundFile.stop();
+        this.soundFile.disconnect();
+      } catch (e) {
+        console.warn("[VOICEGRAM] file disconnect skipped", e);
+      }
       this.isPlaying = false;
+    }
+    if (this.fileObjectUrl) {
+      URL.revokeObjectURL(this.fileObjectUrl);
+      this.fileObjectUrl = null;
     }
   };
 
@@ -178,23 +187,36 @@ var VibeAudio = (function () {
 
   AudioManager.prototype.loadFile = function (file, onReady, onError) {
     var self = this;
+    var objectUrl;
     this.startContext();
+    if (!file || !file.type || file.type.indexOf("audio/") !== 0) {
+      if (onError) onError(new Error("AUDIO FILE REQUIRED"));
+      return;
+    }
     if (this.mic) {
       this.mic.stop();
       this.micReady = false;
     }
     this.disconnectFile();
     this.sourceMode = "file";
+    objectUrl = URL.createObjectURL(file);
+    this.fileObjectUrl = objectUrl;
 
     this.p.loadSound(
-      URL.createObjectURL(file),
+      objectUrl,
       function (snd) {
         self.soundFile = snd;
         self.connectFileToAnalyzer();
         self.isPlaying = false;
         if (onReady) onReady();
       },
-      onError
+      function (err) {
+        if (self.fileObjectUrl === objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          self.fileObjectUrl = null;
+        }
+        if (onError) onError(err);
+      }
     );
   };
 
