@@ -8,6 +8,15 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/vibe-tools/index.html",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
