@@ -2,7 +2,8 @@ var VibePalettes = (function () {
   var palettes = {
     mono: {
       name: "Mono",
-      bg: [0, 0, 0],
+      /* HSB: white canvas (matches white pal-dot); [0,0,0] reads as black in HSB */
+      bg: [0, 0, 100],
       colors: {
         bass: { h: 0, s: 0, b: 100 },
         mid: { h: 0, s: 0, b: 85 },
@@ -104,12 +105,318 @@ var VibePalettes = (function () {
     return getActive().glow + alpha + ")";
   }
 
+  function calcMosaicGray(energy) {
+    var e = VibeUtils.clamp(energy || 0, 0, 1);
+    return {
+      h: 0,
+      s: 0,
+      b: VibeUtils.mapValue(e, 0, 1, 98, 3),
+      a: VibeUtils.mapValue(e, 0, 1, 18, 100),
+    };
+  }
+
+  function getPoundstoneColors() {
+    if (typeof POUNDSTONE_COLORS !== "undefined") {
+      return POUNDSTONE_COLORS;
+    }
+    return null;
+  }
+
+  function hexToHsb(hex) {
+    var r = parseInt(hex.slice(1, 3), 16) / 255;
+    var g = parseInt(hex.slice(3, 5), 16) / 255;
+    var b = parseInt(hex.slice(5, 7), 16) / 255;
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
+    var diff = max - min;
+    var h = 0;
+    var s = max === 0 ? 0 : (diff / max) * 100;
+    var bri = max * 100;
+
+    if (diff !== 0) {
+      if (max === r) {
+        h = 60 * (((g - b) / diff) % 6);
+      } else if (max === g) {
+        h = 60 * (((b - r) / diff) + 2);
+      } else {
+        h = 60 * (((r - g) / diff) + 4);
+      }
+    }
+    if (h < 0) {
+      h += 360;
+    }
+
+    return {
+      h: Math.round(h),
+      s: Math.round(s),
+      b: Math.round(bri),
+    };
+  }
+
+  function selectMosaicHueGroup(analysis) {
+    var bass = analysis.bass || 0;
+    var mid = analysis.mid || 0;
+    var treble = analysis.treble || 0;
+    var total = bass + mid + treble || 1;
+    var bassR = bass / total;
+    var midR = mid / total;
+    var trebleR = treble / total;
+    var delta = analysis.delta || 0;
+    var centroid = analysis.centroid || 0.5;
+    var vol = analysis.isMic
+      ? Math.min((analysis.volume || 0) * 12, 1)
+      : analysis.volume || 0;
+
+    if (vol < 0.2) {
+      return "teal";
+    }
+
+    if (delta > 0.4) {
+      if (bassR > 0.4) return "coral";
+      if (trebleR > 0.4) return "purple";
+      return "pink";
+    }
+
+    if (vol > 0.8) {
+      if (centroid > 0.6) return "purple";
+      return "pink";
+    }
+
+    if (centroid > 0.65) {
+      if (trebleR > midR) return "pink";
+      return "purple";
+    }
+
+    if (centroid < 0.35) {
+      if (bassR > midR) return "coral";
+      return "orange";
+    }
+
+    if (bassR > midR && bassR > trebleR) {
+      return centroid > 0.5 ? "yellow" : "coral";
+    }
+    if (trebleR > midR) {
+      return centroid > 0.5 ? "blue" : "teal";
+    }
+    return midR > bassR ? "pink" : "purple";
+  }
+
+  var IDLE_FALLBACK_ENERGY = 0.14;
+
+  function selectMosaicAccentGroup(primary, analysis) {
+    var warm = {
+      pink: "coral",
+      coral: "orange",
+      orange: "yellow",
+      yellow: "orange",
+      teal: "blue",
+      blue: "purple",
+      purple: "pink",
+    };
+    var contrast = {
+      pink: "purple",
+      coral: "pink",
+      orange: "coral",
+      yellow: "orange",
+      teal: "purple",
+      blue: "teal",
+      purple: "blue",
+    };
+    if ((analysis.delta || 0) > 0.4) {
+      return contrast[primary] || warm[primary] || "coral";
+    }
+    return warm[primary] || "coral";
+  }
+
+  function calcNormDist(col, row, focal, grid) {
+    var dx = col - focal.x;
+    var dy = row - focal.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var maxDist =
+      Math.sqrt(
+        Math.pow((grid.cols - 1) / 2, 2) + Math.pow((grid.rows - 1) / 2, 2)
+      ) || 1;
+    return dist / maxDist;
+  }
+
+  function calcMosaicSpatialContext(col, row, focal, grid, analysis) {
+    var cols = grid.cols;
+    var rows = grid.rows;
+    var gMax = Math.max(cols, rows);
+    var gAvg = (cols + rows) / 2;
+    var dx = col - focal.x;
+    var dy = row - focal.y;
+    var normDist = calcNormDist(col, row, focal, grid);
+    var spread = analysis.spread || 0;
+    var delta = analysis.delta || 0;
+    var centroid = analysis.centroid || 0.5;
+
+    var radial = Math.max(0, 1 - normDist);
+    radial = Math.pow(radial, 0.85);
+
+    var hBand = Math.max(0, 1 - Math.abs(dy) / (rows * 0.34));
+    hBand *= Math.max(0, 1 - Math.abs(dx) / (cols * 0.82));
+
+    var vBand = Math.max(0, 1 - Math.abs(dx) / (cols * 0.26));
+    vBand *= Math.max(0, 1 - Math.abs(dy) / (rows * 0.78));
+
+    var cross = Math.max(hBand, vBand);
+
+    var diagScale = gMax * 0.42;
+    var diag1 = Math.abs(dx - dy) / diagScale;
+    var diag2 = Math.abs(dx + dy) / diagScale;
+    var xPattern = Math.max(0, 1 - Math.min(diag1, diag2));
+    xPattern *= Math.max(0, 1 - normDist * 0.55);
+
+    var manhattan = (Math.abs(dx) + Math.abs(dy)) / (gAvg * 0.54);
+    var diamond = Math.max(0, 1 - manhattan);
+
+    var chebyshev = Math.max(Math.abs(dx), Math.abs(dy));
+    var squareRingFreq = 3 + Math.floor(centroid * 4 + delta * 2);
+    var ringDiv = gMax / squareRingFreq;
+    if (ringDiv < 0.001) {
+      ringDiv = 0.001;
+    }
+    var concentricSquare =
+      Math.abs(Math.sin((chebyshev * Math.PI) / ringDiv)) *
+      Math.max(0, 1 - (chebyshev / (gMax * 0.58)) * 0.75);
+
+    var checkSize = Math.max(2, Math.floor(2 + spread * 5 + delta * 2));
+    var checker =
+      (Math.floor(col / checkSize) + Math.floor(row / checkSize)) % 2 === 0
+        ? 1
+        : 0.18;
+    checker *= Math.max(0, 1 - normDist * 0.65);
+
+    return {
+      radial: radial,
+      hBand: hBand,
+      vBand: vBand,
+      cross: cross,
+      xPattern: xPattern,
+      diamond: diamond,
+      concentricSquare: concentricSquare,
+      checker: checker,
+      normDist: normDist,
+    };
+  }
+
+  function quantizeTier(strength) {
+    var q = Math.round(VibeUtils.clamp(strength, 0, 1) * 3) / 3;
+    if (q < 0.34) {
+      return 0;
+    }
+    if (q < 0.67) {
+      return 1;
+    }
+    return 2;
+  }
+
+  function calcColorStrength(spatial, pattern) {
+    var main = pattern && pattern.main ? pattern.main : "radial";
+    var sub = pattern && pattern.sub ? pattern.sub : "diamond";
+    var mainVal = spatial[main] != null ? spatial[main] : spatial.radial;
+    var subVal = spatial[sub] != null ? spatial[sub] : 0;
+    var strength = mainVal * 0.72 + subVal * 0.28;
+    return Math.pow(VibeUtils.clamp(strength, 0, 1), 0.72);
+  }
+
+  function useAccentPalette(spatial, pattern) {
+    var main = pattern && pattern.main ? pattern.main : "radial";
+    var sub = pattern && pattern.sub ? pattern.sub : "diamond";
+
+    if (main === "xPattern" || main === "checker") {
+      return true;
+    }
+    if (sub === "xPattern" && spatial.xPattern > 0.55) {
+      return true;
+    }
+    if (sub === "checker" && spatial.checker > 0.45 && spatial.normDist < 0.72) {
+      return true;
+    }
+    if (main === "cross" && spatial.cross > 0.62) {
+      return true;
+    }
+    if (main === "hBand" && spatial.vBand > spatial.hBand * 0.92) {
+      return true;
+    }
+    if (main === "vBand" && spatial.hBand > spatial.vBand * 0.92) {
+      return true;
+    }
+    return false;
+  }
+
+  function calcMosaicColor(col, row, energy, focal, analysis, grid, pattern) {
+    var colors = getPoundstoneColors();
+    var e = VibeUtils.clamp(energy || 0, 0, 1);
+    var a = analysis || {};
+
+    if (!colors) {
+      return calcMosaicGray(e);
+    }
+
+    var primary = selectMosaicHueGroup(a);
+    var accent = selectMosaicAccentGroup(primary, a);
+    var spatial = calcMosaicSpatialContext(col, row, focal, grid, a);
+    var strength = calcColorStrength(spatial, pattern || { main: "radial", sub: "diamond" });
+    var tier = quantizeTier(strength);
+    var group = useAccentPalette(spatial, pattern) ? accent : primary;
+    var palette = colors[group] || colors.teal;
+    var hex = palette[tier] || palette[0];
+    var hsb = hexToHsb(hex);
+
+    if (tier === 2) {
+      hsb.s = VibeUtils.clamp(hsb.s * 1.04, 0, 100);
+      hsb.b = VibeUtils.clamp(hsb.b * 1.02, 0, 100);
+    } else if (tier === 0) {
+      hsb.s = Math.max(0, hsb.s - 4);
+      hsb.b = Math.min(100, hsb.b + 3);
+    }
+
+    return {
+      h: hsb.h,
+      s: hsb.s,
+      b: VibeUtils.clamp(
+        hsb.b * VibeUtils.mapValue(e, 0, 1, 0.82, 1.04),
+        0,
+        100
+      ),
+      a: VibeUtils.mapValue(e, 0, 1, 24, 100),
+    };
+  }
+
+  function calcMosaicIdleColor(col, row, focal, grid) {
+    var colors = getPoundstoneColors();
+    var normDist = calcNormDist(col, row, focal, grid);
+
+    if (normDist > 0.42) {
+      return { h: 0, s: 0, b: 100, a: 0 };
+    }
+
+    if (!colors || !colors.teal) {
+      return calcMosaicGray(IDLE_FALLBACK_ENERGY);
+    }
+
+    var strength = Math.pow(1 - normDist / 0.42, 1.2);
+    var tier = quantizeTier(strength * 0.45);
+    var hsb = hexToHsb(colors.teal[tier] || colors.teal[0]);
+
+    return {
+      h: hsb.h,
+      s: Math.max(0, hsb.s - 6),
+      b: Math.min(100, hsb.b + 4),
+      a: VibeUtils.mapValue(strength, 0, 1, 8, 28),
+    };
+  }
   return {
     active: active,
     palettes: palettes,
     getActive: getActive,
     setActive: setActive,
     calcColor: calcColor,
+    calcMosaicGray: calcMosaicGray,
+    calcMosaicColor: calcMosaicColor,
+    calcMosaicIdleColor: calcMosaicIdleColor,
     glowColor: glowColor,
   };
 })();

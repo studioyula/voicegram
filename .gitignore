@@ -1,10 +1,14 @@
 node_modules/
 tmp/
 logs/
-scripts/
+scripts/*
+!scripts/extract_colors.py
+!scripts/requirements-extract-colors.txt
 .cursor/
 *.log
 .env
 .claude
 conversation-logs/
 .DS_Store
+poundstone_images/
+poundstone_palettes.json

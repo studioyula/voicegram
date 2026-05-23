@@ -6,15 +6,32 @@
     <title>VOICEGRAM</title>
     <style>
       :root {
-        --ui-bg: rgba(18, 18, 18, 0.85);
-        --ui-bg-hover: rgba(255, 255, 255, 0.08);
-        --ui-bg-active: rgba(255, 255, 255, 0.12);
-        --ui-border: rgba(255, 255, 255, 0.1);
-        --ui-text: rgba(255, 255, 255, 0.55);
-        --ui-text-bright: rgba(255, 255, 255, 0.85);
-        --ui-accent: rgba(255, 255, 255, 0.9);
-        --ui-font: "SF Mono", "JetBrains Mono", "Fira Code", "Menlo", monospace;
-        --ui-radius: 3px;
+        --bg: #f7f7f5;
+        --surface: #ffffff;
+        --ink: #111111;
+        --ink-secondary: #5c5c5c;
+        --ink-tertiary: #8a8a8a;
+        --border: #e6e6e3;
+        --border-strong: #d2d2ce;
+        --fill-subtle: #f2f2f0;
+        --fill-segment: #ececea;
+        --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.04);
+        --shadow-md: 0 8px 32px rgba(17, 17, 17, 0.06);
+        --shadow-lg: 0 20px 60px rgba(17, 17, 17, 0.08);
+        --sidebar-w: 300px;
+        --topbar-h: 56px;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        --radius-full: 999px;
+        --font-ui: "Helvetica Neue", "Apple SD Gothic Neo", "Pretendard", Arial, sans-serif;
+        --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Menlo", monospace;
       }
 
       * {
@@ -28,405 +45,626 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #0a0a0a;
-        color: var(--ui-text-bright);
-        font-family: var(--ui-font);
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 13px;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
       }
 
       #canvas-host {
         position: fixed;
-        inset: 0;
+        left: var(--space-6);
+        right: calc(var(--sidebar-w) + var(--space-6) + var(--space-4));
+        top: calc(var(--topbar-h) + var(--space-5));
+        bottom: var(--space-6);
         z-index: 0;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-md);
       }
+
       #canvas-host canvas {
         display: block;
       }
 
-      .ui-layer {
-        position: fixed;
-        z-index: 10;
-        pointer-events: none;
-      }
-      .ui-layer > * {
-        pointer-events: auto;
+      .topbar,
+      .controlbar,
+      #debug-bands {
+        backdrop-filter: blur(20px) saturate(1.1);
+        -webkit-backdrop-filter: blur(20px) saturate(1.1);
       }
 
-      .top-left {
-        top: 16px;
-        left: 16px;
-        max-width: 300px;
-      }
-      .top-center {
-        top: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-      .top-right {
-        top: 16px;
-        right: 16px;
+      .topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
         display: flex;
-        gap: 8px;
         align-items: center;
-        background: var(--ui-bg);
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        padding: 4px 8px;
-      }
-      .bottom-center {
-        bottom: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        text-align: center;
+        justify-content: space-between;
+        height: var(--topbar-h);
+        padding: 0 var(--space-6);
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.88);
       }
 
-      .brand {
-        position: fixed;
-        bottom: 16px;
-        right: 16px;
-        z-index: 10;
-        pointer-events: none;
-        font-family: var(--ui-font);
-        font-size: 9px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.2);
+      .brand-logo {
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: var(--space-2);
+      }
+
+      button,
+      input,
+      select {
+        font-family: var(--font-ui);
       }
 
       button {
-        font-family: var(--ui-font);
-        font-size: 11px;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--ui-text);
-        background: transparent;
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        padding: 6px 12px;
+        min-height: 32px;
+        padding: 0 var(--space-3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink-secondary);
+        font-size: 12px;
+        font-weight: 550;
+        letter-spacing: -0.01em;
         cursor: pointer;
-        transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
       }
 
       button:hover {
-        color: var(--ui-text-bright);
-        background: var(--ui-bg-hover);
-        border-color: rgba(255, 255, 255, 0.2);
+        background: var(--fill-subtle);
+        border-color: var(--border-strong);
+        color: var(--ink);
       }
 
-      button.active {
-        color: var(--ui-accent);
-        background: var(--ui-bg-active);
-        border-color: rgba(255, 255, 255, 0.3);
+      .primary-btn,
+      #btn-play-pause {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #fff;
       }
 
-      .panel-source {
+      .primary-btn:hover,
+      #btn-play-pause:hover {
+        background: #2a2a2a;
+        border-color: #2a2a2a;
+        color: #fff;
+      }
+
+      .controlbar {
+        position: fixed;
+        top: calc(var(--topbar-h) + var(--space-5));
+        right: var(--space-6);
+        bottom: var(--space-6);
+        z-index: 10;
+        width: var(--sidebar-w);
         display: flex;
-        gap: 2px;
-        align-items: center;
-        background: var(--ui-bg);
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        padding: 2px;
+        flex-direction: column;
+        gap: var(--space-5);
+        padding: var(--space-4);
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: var(--shadow-md);
+      }
+
+      .control-section {
+        display: grid;
+        gap: var(--space-3);
+        min-width: 0;
+      }
+
+      .visual-section {
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--border);
+      }
+
+      .control-label {
+        color: var(--ink-tertiary);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .source-controls,
+      .visual-controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        min-width: 0;
       }
 
       .source-tabs {
-        display: flex;
-        gap: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+        padding: 3px;
+        border-radius: var(--radius-md);
+        background: var(--fill-segment);
       }
 
       .tab-btn {
-        border: none;
-        border-radius: 2px;
-        padding: 5px 10px;
-        font-size: 10px;
+        min-height: 36px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--ink-tertiary);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
       }
 
-      .tab-btn.active {
-        background: rgba(255, 255, 255, 0.12);
-        color: var(--ui-text-bright);
-      }
-
-      .toggle-btn {
-        border: none;
-        border-left: 1px solid var(--ui-border);
-        border-radius: 0;
-        padding: 5px 10px;
-        font-size: 10px;
-        display: inline-flex;
-        align-items: center;
-        gap: 0;
-      }
-
-      .toggle-btn.on {
-        color: var(--ui-text-bright);
+      .tab-btn:hover {
+        color: var(--ink-secondary);
         background: transparent;
       }
 
-      .toggle-btn.on::before {
-        content: "";
-        display: inline-block;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: #4ade80;
-        margin-right: 5px;
-        vertical-align: middle;
+      .tab-btn.active {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .mode-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: var(--space-2);
+      }
+
+      .mode-btn {
+        min-height: 36px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .mode-btn:hover {
+        border-color: var(--border-strong);
+        background: var(--fill-subtle);
+      }
+
+      .mode-btn.active {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .mode-btn.active:hover {
+        background: #2a2a2a;
+        border-color: #2a2a2a;
+        color: #fff;
+      }
+
+      .source-field-label {
+        display: inline-flex;
+        flex-shrink: 0;
+        min-height: 28px;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--fill-subtle);
+        color: var(--ink-secondary);
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .inline-select {
+        flex: 1;
+        min-width: 0;
+        min-height: 28px;
+        padding: 0 28px 0 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--fill-subtle);
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 550;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238a8a8a' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+      }
+
+      .inline-select:hover {
+        background-color: var(--surface);
+        border-color: var(--ink-tertiary);
+      }
+
+      .input-hint,
+      .file-status-text {
+        color: var(--ink-tertiary);
+        font-size: 11px;
+        font-weight: 450;
+        line-height: 1.35;
       }
 
       .sub-controls {
-        margin-top: 6px;
-        padding: 8px;
-        background: var(--ui-bg);
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        width: 100%;
+        display: grid;
+        gap: var(--space-4);
+        min-width: 0;
       }
+
+      .source-block {
+        display: grid;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .source-subline {
+        padding-left: 2px;
+      }
+
       .sub-controls.hidden {
         display: none;
       }
 
       .file-row {
-        margin-bottom: 0;
-      }
-
-      .playback-stack {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 8px;
-      }
-
-      #btn-play-pause {
-        font-size: 10px;
-        padding: 4px 10px;
-        width: 100%;
+        align-items: center;
+        gap: var(--space-2);
+        min-width: 0;
       }
 
       #file-input {
-        font-family: var(--ui-font);
-        font-size: 10px;
-        color: var(--ui-text);
-        width: 100%;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
       }
 
-      #file-input::file-selector-button {
-        font-family: var(--ui-font);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--ui-text);
-        background: transparent;
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        padding: 4px 8px;
+      .file-select-button {
+        display: inline-flex;
+        flex-shrink: 0;
+        min-height: 28px;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--fill-subtle);
+        color: var(--ink-secondary);
+        font-size: 11px;
+        font-weight: 600;
         cursor: pointer;
-        margin-right: 8px;
+        white-space: nowrap;
+        transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
       }
 
-      #file-input::file-selector-button:hover {
-        color: var(--ui-text-bright);
-        background: var(--ui-bg-hover);
-        border-color: rgba(255, 255, 255, 0.2);
+      .file-select-button:hover {
+        background: var(--surface);
+        border-color: var(--ink-tertiary);
+        color: var(--ink);
       }
 
-      .sub-controls input[type="range"] {
+      .file-status-text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .playback-stack {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-2);
+      }
+
+      .playback-stack > button {
+        min-width: 64px;
+        min-height: 32px;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+      }
+
+      .playback-stack > button.on {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .playback-stack > button.on:hover {
+        background: #2a2a2a;
+        border-color: #2a2a2a;
+        color: #fff;
+      }
+
+      .activity-track {
+        width: 100%;
+        height: 3px;
+        border-radius: var(--radius-full);
+        background: var(--border);
+        overflow: hidden;
+      }
+
+      .activity-fill {
+        display: block;
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--ink);
+        transition: width 0.08s linear;
+      }
+
+      input[type="range"] {
         -webkit-appearance: none;
         appearance: none;
         width: 100%;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 1px;
+        height: 3px;
+        border-radius: var(--radius-full);
+        background: var(--border);
         outline: none;
-        margin: 0;
       }
 
-      .sub-controls input[type="range"]::-webkit-slider-thumb {
+      input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
-        width: 8px;
-        height: 8px;
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--surface);
         border-radius: 50%;
-        background: var(--ui-text-bright);
+        background: var(--ink);
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 3px;
+        border-radius: var(--radius-full);
+        background: var(--border);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--ink);
         cursor: pointer;
       }
 
-      .sub-controls input[type="range"]::-moz-range-track {
-        height: 2px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 1px;
+      .palette-row {
+        display: grid;
+        gap: var(--space-2);
       }
 
-      .sub-controls input[type="range"]::-moz-range-thumb {
-        width: 8px;
-        height: 8px;
-        border: none;
-        border-radius: 50%;
-        background: var(--ui-text-bright);
-        cursor: pointer;
+      .mosaic-aspect-wrap {
+        display: grid;
+        gap: var(--space-2);
       }
 
-      #mic-device {
+      .mosaic-aspect-wrap.hidden {
+        display: none;
+      }
+
+      .aspect-select {
         width: 100%;
-        padding: 6px 8px;
-        border-radius: var(--ui-radius);
-        border: 1px solid var(--ui-border);
-        background: rgba(10, 10, 10, 0.6);
-        color: var(--ui-text);
-        font-family: var(--ui-font);
-        font-size: 10px;
-        letter-spacing: 0.03em;
       }
 
-      .mode-selector {
-        display: flex;
-        gap: 0;
-        background: var(--ui-bg);
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
-        padding: 2px;
-      }
-
-      .mode-btn {
-        border: none;
-        border-radius: 2px;
-        padding: 6px 16px;
+      .palette-label {
+        color: var(--ink-tertiary);
         font-size: 11px;
-        letter-spacing: 0.06em;
-      }
-
-      .mode-btn.active {
-        background: rgba(255, 255, 255, 0.15);
-        color: var(--ui-accent);
+        font-weight: 550;
       }
 
       .palette-dots {
         display: flex;
-        gap: 4px;
-        align-items: center;
-        padding-right: 8px;
-        border-right: 1px solid var(--ui-border);
+        flex-wrap: wrap;
+        gap: var(--space-2);
       }
 
       button.pal-dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 1.5px solid rgba(255, 255, 255, 0.15);
-        cursor: pointer;
+        width: 20px;
+        min-width: 20px;
+        height: 20px;
+        min-height: 20px;
         padding: 0;
-        text-transform: none;
-        letter-spacing: normal;
+        border: 1.5px solid rgba(17, 17, 17, 0.12);
+        border-radius: 50%;
+        color: transparent;
         font-size: 0;
-        line-height: 0;
-        transition: border-color 0.15s ease, transform 0.15s ease;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
       }
 
       button.pal-dot:hover {
-        border-color: rgba(255, 255, 255, 0.4);
-        transform: scale(1.15);
+        transform: scale(1.08);
         background: transparent;
       }
 
       button.pal-dot.active {
-        border-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
-        color: transparent;
-        background: transparent;
+        border-color: var(--ink);
+        box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink);
       }
 
-      #btn-clear,
-      #btn-capture {
-        border: none;
-        font-size: 10px;
-        padding: 4px 8px;
-      }
-
-      #btn-clear:hover,
-      #btn-capture:hover {
-        background: var(--ui-bg-hover);
-      }
-
-      #status-text {
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.3);
-        letter-spacing: 0.03em;
-        margin-top: 6px;
+      .bottom-center {
+        position: fixed;
+        left: var(--space-6);
+        bottom: var(--space-5);
+        z-index: 10;
+        pointer-events: none;
       }
 
       #debug-bands {
-        font-family: var(--ui-font);
-        font-size: 9px;
-        letter-spacing: 0.02em;
-        color: rgba(255, 255, 255, 0.3);
+        max-width: calc(100vw - 48px);
         padding: 6px 12px;
-        background: var(--ui-bg);
-        border: 1px solid var(--ui-border);
-        border-radius: var(--ui-radius);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--ink-tertiary);
+        font-size: 10px;
+        font-family: var(--font-mono);
         font-variant-numeric: tabular-nums;
-        max-width: 96vw;
+        pointer-events: auto;
       }
 
       #debug-bands.hidden {
         display: none;
+      }
+
+      @media (max-width: 760px) {
+        #canvas-host {
+          top: calc(var(--topbar-h) + var(--space-3));
+          left: var(--space-3);
+          right: var(--space-3);
+          bottom: 320px;
+          border-radius: var(--radius-md);
+        }
+
+        .topbar {
+          padding: 0 var(--space-4);
+        }
+
+        .controlbar {
+          top: auto;
+          left: var(--space-3);
+          right: var(--space-3);
+          bottom: var(--space-3);
+          width: auto;
+          max-height: 280px;
+        }
+
+        .visual-section {
+          padding-top: var(--space-4);
+        }
+
+        .bottom-center {
+          left: var(--space-4);
+          right: var(--space-4);
+          bottom: 300px;
+        }
       }
     </style>
   </head>
   <body>
     <div id="canvas-host"></div>
 
-    <div class="ui-layer top-left">
-      <div class="panel-source">
-        <div class="source-tabs">
-          <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
-          <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
+    <header class="topbar" aria-label="Voicegram controls">
+      <div class="brand-logo">
+        <span>VOICEGRAM</span>
+      </div>
+      <div class="top-actions">
+        <button id="btn-clear" type="button">Clear</button>
+        <button id="btn-capture" class="primary-btn" type="button" title="Save PNG">Export</button>
+      </div>
+    </header>
+
+    <main class="controlbar" aria-label="Audio and visual controls">
+      <section class="control-section source-section" aria-label="Input source controls">
+        <div class="control-meta">
+          <div class="control-label">Source</div>
         </div>
-        <button id="btn-toggle" class="toggle-btn" type="button">OFF</button>
-      </div>
+        <div class="source-controls">
+          <div class="panel-source">
+            <div class="source-tabs">
+              <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
+              <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
+            </div>
+          </div>
 
-      <div id="file-controls" class="sub-controls">
-        <div class="file-row">
-          <input id="file-input" type="file" accept="audio/*" />
+          <div class="input-area">
+            <div id="file-controls" class="sub-controls">
+              <div class="file-row">
+                <label class="file-select-button" for="file-input">파일 선택</label>
+                <span id="file-label" class="file-status-text">파일을 선택한 뒤 PLAY를 누르세요</span>
+                <input id="file-input" type="file" accept="audio/*" />
+              </div>
+              <div class="playback-stack">
+                <button id="btn-play-pause" type="button">PLAY</button>
+                <input id="progress-bar" type="range" min="0" max="1" step="0.001" value="0" />
+              </div>
+            </div>
+
+            <div id="mic-controls" class="sub-controls hidden">
+              <div class="source-block">
+                <div class="file-row">
+                  <span class="source-field-label">장치</span>
+                  <select id="mic-device" class="inline-select"></select>
+                </div>
+                <span id="mic-label" class="file-status-text source-subline">장치를 선택하고 ON을 누르세요</span>
+              </div>
+              <div class="playback-stack">
+                <button id="btn-toggle" type="button">OFF</button>
+                <div class="activity-track" aria-hidden="true">
+                  <span id="mic-activity-fill" class="activity-fill"></span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="playback-stack">
-          <button id="btn-play-pause" type="button">PLAY</button>
-          <input id="progress-bar" type="range" min="0" max="1" step="0.001" value="0" />
+      </section>
+
+      <section class="control-section visual-section" aria-label="Visual mode controls">
+        <div class="control-meta">
+          <div class="control-label">Visual</div>
         </div>
-      </div>
+        <div class="visual-controls">
+          <div class="mode-selector">
+            <button class="mode-btn" type="button" data-mode="shape">SHAPE</button>
+            <button class="mode-btn active" type="button" data-mode="mosaic">MOSAIC</button>
+          </div>
 
-      <div id="mic-controls" class="sub-controls hidden">
-        <select id="mic-device"></select>
-      </div>
+          <div id="mosaic-aspect-wrap" class="mosaic-aspect-wrap">
+            <span class="palette-label">Frame</span>
+            <select id="mosaic-aspect" class="inline-select aspect-select" aria-label="Mosaic frame aspect ratio">
+              <option value="1-1" selected>1 : 1</option>
+              <option value="4-3">4 : 3</option>
+              <option value="3-4">3 : 4</option>
+              <option value="16-9">16 : 9</option>
+              <option value="9-16">9 : 16</option>
+              <option value="21-9">21 : 9</option>
+              <option value="2-1">2 : 1</option>
+              <option value="1-2">1 : 2</option>
+            </select>
+          </div>
 
-      <p id="status-text">LOADING</p>
-    </div>
+          <div class="palette-row">
+            <span class="palette-label">Palette</span>
+            <div class="palette-dots">
+              <button class="pal-dot active" type="button" data-pal="mono" title="Mono" aria-label="Mono" style="background:#ffffff"></button>
+              <button class="pal-dot" type="button" data-pal="neonFire" title="Fire" aria-label="Fire" style="background:#ff4422"></button>
+              <button class="pal-dot" type="button" data-pal="ocean" title="Ocean" aria-label="Ocean" style="background:#4488ff"></button>
+              <button class="pal-dot" type="button" data-pal="candy" title="Candy" aria-label="Candy" style="background:#ff66aa"></button>
+              <button class="pal-dot" type="button" data-pal="acid" title="Acid" aria-label="Acid" style="background:#44ff66"></button>
+              <button class="pal-dot" type="button" data-pal="vivid" title="Vivid" aria-label="Vivid" style="background:linear-gradient(135deg,#ff2222 50%,#4488ff 50%)"></button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
-    <div class="ui-layer top-center">
-      <div class="mode-selector">
-        <button class="mode-btn" type="button" data-mode="shape">SHAPE</button>
-        <button class="mode-btn active" type="button" data-mode="mosaic">MOSAIC</button>
-      </div>
-    </div>
-
-    <div class="ui-layer top-right">
-      <div class="palette-dots">
-        <button class="pal-dot active" type="button" data-pal="mono" title="Mono" aria-label="Mono" style="background:#ffffff"></button>
-        <button class="pal-dot" type="button" data-pal="neonFire" title="Fire" aria-label="Fire" style="background:#ff4422"></button>
-        <button class="pal-dot" type="button" data-pal="ocean" title="Ocean" aria-label="Ocean" style="background:#4488ff"></button>
-        <button class="pal-dot" type="button" data-pal="candy" title="Candy" aria-label="Candy" style="background:#ff66aa"></button>
-        <button class="pal-dot" type="button" data-pal="acid" title="Acid" aria-label="Acid" style="background:#44ff66"></button>
-        <button class="pal-dot" type="button" data-pal="vivid" title="Vivid" aria-label="Vivid" style="background:linear-gradient(135deg,#ff2222 50%,#4488ff 50%)"></button>
-      </div>
-      <button id="btn-clear" type="button">CLEAR</button>
-      <button id="btn-capture" type="button" title="Save PNG">CAPTURE</button>
-    </div>
-
-    <div class="ui-layer bottom-center">
+    <div class="bottom-center">
       <p id="debug-bands" class="hidden"></p>
     </div>
-
-    <div class="brand">VOICEGRAM v1.5</div>
 
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/addons/p5.sound.min.js"></script>
     <script src="utils.js"></script>
+    <script src="poundstone_colors.js"></script>
     <script src="palettes.js"></script>
     <script src="audio.js"></script>
     <script src="renderer-shape.js"></script>

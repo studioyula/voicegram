@@ -41,7 +41,7 @@ var VibeAudio = (function () {
   }
 
   AudioManager.prototype.init = function () {
-    this.fft = new p5.FFT(0.8, 128);
+    this.fft = new p5.FFT(0.92, 128);
     this.prevTotalEnergy = 0;
   };
 
@@ -260,7 +260,7 @@ var VibeAudio = (function () {
         self.micNode = ctx.createMediaStreamSource(stream);
         self.micAnalyser = ctx.createAnalyser();
         self.micAnalyser.fftSize = 256;
-        self.micAnalyser.smoothingTimeConstant = 0.8;
+        self.micAnalyser.smoothingTimeConstant = 0.92;
         self.micNode.connect(self.micAnalyser);
         self.micFreqData = new Uint8Array(self.micAnalyser.frequencyBinCount);
         self.micTimeData = new Uint8Array(self.micAnalyser.fftSize);

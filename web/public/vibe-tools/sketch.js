@@ -3,6 +3,8 @@
   var shapeRenderer;
   var mosaicRenderer;
   var currentMode = "mosaic";
+  var mosaicAspectW = 1;
+  var mosaicAspectH = 1;
 
   window.VibeApp = {
     getMode: function () {
@@ -10,6 +12,18 @@
     },
     setMode: function (mode) {
       currentMode = mode;
+    },
+    getMosaicAspect: function () {
+      return { w: mosaicAspectW, h: mosaicAspectH };
+    },
+    setMosaicAspect: function (w, h) {
+      var nw = typeof w === "number" && w > 0 ? w : 1;
+      var nh = typeof h === "number" && h > 0 ? h : 1;
+      mosaicAspectW = Math.min(8, Math.max(0.25, nw));
+      mosaicAspectH = Math.min(8, Math.max(0.25, nh));
+      if (mosaicRenderer && typeof mosaicRenderer.invalidateLayout === "function") {
+        mosaicRenderer.invalidateLayout();
+      }
     },
     getRenderer: function () {
       return currentMode === "mosaic" ? mosaicRenderer : shapeRenderer;
@@ -23,8 +37,17 @@
   };
 
   var sketch = function (p) {
+    function getCanvasHostSize() {
+      var host = document.getElementById("canvas-host");
+      return {
+        width: host ? host.clientWidth : p.windowWidth,
+        height: host ? host.clientHeight : p.windowHeight,
+      };
+    }
+
     p.setup = function () {
-      var c = p.createCanvas(p.windowWidth, p.windowHeight);
+      var size = getCanvasHostSize();
+      var c = p.createCanvas(size.width, size.height);
       c.parent("canvas-host");
       p.colorMode(p.HSB, 360, 100, 100, 100);
       var bg = VibePalettes.getActive().bg;
@@ -49,14 +72,15 @@
     };
 
     p.windowResized = function () {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
+      var size = getCanvasHostSize();
+      p.resizeCanvas(size.width, size.height);
     };
   };
 
   window.addEventListener("DOMContentLoaded", function () {
     if (typeof p5 === "undefined") {
-      document.getElementById("status-text").textContent =
-        "P5 FAILED — RELOAD";
+      var failLabel = document.getElementById("file-label");
+      if (failLabel) failLabel.textContent = "P5 FAILED — RELOAD";
       return;
     }
     new p5(sketch);
