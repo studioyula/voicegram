@@ -78,10 +78,42 @@ var VibeUI = (function () {
 
     setupModeButtons();
     setupShapeBackgroundDots();
+    setupCanvasAspectSelect();
     setupDebugToggle();
 
     setSource("file");
     updateToggleLabel();
+  }
+
+  function parseCanvasAspectString(val) {
+    var raw = val || "1:1";
+    var parts = String(raw).split(":");
+    var w = parseInt(parts[0], 10);
+    var h = parseInt(parts[1], 10);
+    if (!isFinite(w) || w <= 0) w = 1;
+    if (!isFinite(h) || h <= 0) h = 1;
+    return { w: w, h: h };
+  }
+
+  function applyCanvasAspectFromSelect() {
+    if (
+      !els.canvasAspect ||
+      !window.VibeApp ||
+      typeof window.VibeApp.setMosaicAspect !== "function"
+    ) {
+      return;
+    }
+    var parsed = parseCanvasAspectString(els.canvasAspect.value);
+    window.VibeApp.setMosaicAspect(parsed.w, parsed.h);
+  }
+
+  function setupCanvasAspectSelect() {
+    els.canvasAspect = document.getElementById("canvas-aspect");
+    if (!els.canvasAspect) return;
+    els.canvasAspect.addEventListener("change", function () {
+      applyCanvasAspectFromSelect();
+    });
+    applyCanvasAspectFromSelect();
   }
 
   function setupModeButtons() {

@@ -103,6 +103,15 @@ VibeRenderer.MosaicRenderer = (function () {
   }
 
   MosaicRenderer.prototype.getAspect = function () {
+    if (
+      window.VibeApp &&
+      typeof window.VibeApp.getMosaicAspect === "function"
+    ) {
+      var a = window.VibeApp.getMosaicAspect();
+      if (a && isFinite(a.w) && isFinite(a.h) && a.w > 0 && a.h > 0) {
+        return { w: a.w, h: a.h };
+      }
+    }
     return { w: 1, h: 1 };
   };
 

@@ -3,6 +3,8 @@
   var shapeRenderer;
   var mosaicRenderer;
   var currentMode = "mosaic";
+  var mosaicAspectW = 1;
+  var mosaicAspectH = 1;
 
   window.VibeApp = {
     _canvasEl: null,
@@ -11,6 +13,23 @@
     },
     setMode: function (mode) {
       currentMode = mode;
+    },
+    getMosaicAspect: function () {
+      return { w: mosaicAspectW, h: mosaicAspectH };
+    },
+    setMosaicAspect: function (w, h) {
+      var nw = Number(w);
+      var nh = Number(h);
+      if (!isFinite(nw) || nw <= 0) nw = 1;
+      if (!isFinite(nh) || nh <= 0) nh = 1;
+      mosaicAspectW = nw;
+      mosaicAspectH = nh;
+      if (
+        mosaicRenderer &&
+        typeof mosaicRenderer.invalidateLayout === "function"
+      ) {
+        mosaicRenderer.invalidateLayout();
+      }
     },
     getRenderer: function () {
       return currentMode === "mosaic" ? mosaicRenderer : shapeRenderer;

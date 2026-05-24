@@ -557,7 +557,8 @@
         cursor: pointer;
       }
 
-      #mic-device {
+      #mic-device,
+      #canvas-aspect {
         width: 100%;
         min-height: 32px;
         padding: 0 var(--space-3);
@@ -566,6 +567,24 @@
         background: var(--surface);
         color: var(--ink);
         font-size: 12px;
+      }
+
+      .canvas-section {
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--border);
+      }
+
+      .canvas-controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .select-label {
+        color: var(--ink-tertiary);
+        font-size: 11px;
+        font-weight: 550;
       }
 
       .palette-row {
@@ -659,6 +678,10 @@
           padding-top: var(--space-4);
         }
 
+        .canvas-section {
+          padding-top: var(--space-4);
+        }
+
         .bottom-center {
           left: var(--space-4);
           right: var(--space-4);
@@ -748,12 +771,32 @@
         </div>
       </section>
 
+      <section class="control-section canvas-section" aria-label="Canvas size controls">
+        <div class="control-meta">
+          <div class="control-label">Canvas</div>
+        </div>
+
+        <div class="canvas-controls">
+          <label class="select-label" for="canvas-aspect">Size</label>
+          <select id="canvas-aspect">
+            <option value="1:1" selected>1:1 Square</option>
+            <option value="4:5">4:5 Portrait</option>
+            <option value="5:4">5:4 Landscape</option>
+            <option value="16:9">16:9 Wide</option>
+            <option value="9:16">9:16 Vertical</option>
+          </select>
+        </div>
+      </section>
+
       <section class="control-section output-section" aria-label="Output export">
         <div class="control-meta">
           <div class="control-label">Output</div>
         </div>
         <div class="output-controls" role="toolbar" aria-label="Canvas capture and video recording">
           <button id="btn-clear" class="output-btn" type="button">Clear</button>
+          <button id="btn-capture" class="output-btn primary-btn" type="button" title="현재 화면을 PNG로 저장">
+            Capture
+          </button>
           <button
             id="btn-record-video"
             class="output-btn"
@@ -766,9 +809,6 @@
               <span id="btn-record-video-title" class="rec-title">영상 녹화</span>
               <span id="btn-record-video-hint" class="rec-hint">캔버스 → 동영상 파일 저장</span>
             </span>
-          </button>
-          <button id="btn-capture" class="output-btn primary-btn" type="button" title="현재 화면을 PNG로 저장">
-            Capture
           </button>
         </div>
       </section>
