@@ -140,39 +140,45 @@
         color: #fff;
       }
 
-      .canvas-actions {
-        position: fixed;
-        z-index: 11;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: stretch;
-        justify-content: flex-end;
-        gap: var(--space-2);
-        right: calc(var(--sidebar-w) + var(--space-6) + var(--space-4));
-        bottom: var(--space-6);
-        max-width: calc(100vw - var(--sidebar-w) - var(--space-6) * 3 - var(--space-4));
-        padding: var(--space-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: var(--shadow-md);
-        backdrop-filter: blur(12px) saturate(1.05);
-        -webkit-backdrop-filter: blur(12px) saturate(1.05);
-        pointer-events: none;
+      .output-section {
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--border);
       }
 
-      .canvas-actions > * {
-        pointer-events: auto;
+      .output-controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .output-controls .output-btn {
+        display: inline-flex;
+        align-items: center;
+        width: 100%;
+        min-height: 40px;
+        justify-content: center;
+      }
+
+      .output-controls #btn-clear {
+        color: var(--ink-secondary);
+      }
+
+      .output-controls #btn-record-video {
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: var(--radius-md);
       }
 
       #btn-record-video {
+        flex-shrink: 0;
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        min-height: 48px;
-        padding: 8px 16px 8px 14px;
+        min-height: 44px;
+        padding: 6px 14px 6px 12px;
         border: 2px solid #b71c1c;
-        border-radius: var(--radius-md);
+        border-radius: 999px;
         background: linear-gradient(165deg, #ff5252 0%, #d32f2f 55%, #c62828 100%);
         color: #fff;
         font-size: 12px;
@@ -182,7 +188,7 @@
         text-align: left;
         box-shadow:
           0 0 0 1px rgba(255, 255, 255, 0.12) inset,
-          0 6px 20px rgba(198, 40, 40, 0.45);
+          0 4px 16px rgba(198, 40, 40, 0.38);
       }
 
       #btn-record-video:hover {
@@ -658,12 +664,6 @@
           right: var(--space-4);
           bottom: 300px;
         }
-
-        .canvas-actions {
-          right: var(--space-3);
-          bottom: 300px;
-          max-width: calc(100vw - var(--space-3) * 2);
-        }
       }
     </style>
   </head>
@@ -676,25 +676,6 @@
       </div>
     </header>
 
-    <div class="canvas-actions" role="toolbar" aria-label="Canvas capture and video recording">
-      <button id="btn-clear" type="button">Clear</button>
-      <button
-        id="btn-record-video"
-        type="button"
-        title="캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
-        aria-pressed="false"
-      >
-        <span class="rec-dot" aria-hidden="true"></span>
-        <span class="rec-copy">
-          <span id="btn-record-video-title" class="rec-title">영상 녹화</span>
-          <span id="btn-record-video-hint" class="rec-hint">캔버스 → 동영상 파일 저장</span>
-        </span>
-      </button>
-      <button id="btn-capture" class="primary-btn" type="button" title="현재 화면을 PNG로 저장">
-        Capture
-      </button>
-    </div>
-
     <main class="controlbar" aria-label="Audio and visual controls">
       <section class="control-section source-section" aria-label="Input source controls">
         <div class="control-meta">
@@ -706,11 +687,6 @@
               <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
               <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
             </div>
-          </div>
-
-          <div id="analysis-control" class="analysis-control hidden">
-            <span class="analysis-label">소리 입력</span>
-            <button id="btn-toggle" class="toggle-btn" type="button">OFF</button>
           </div>
 
           <div class="input-area">
@@ -728,6 +704,10 @@
 
             <div id="mic-controls" class="sub-controls hidden">
               <select id="mic-device"></select>
+              <div id="analysis-control" class="analysis-control">
+                <span class="analysis-label">소리 입력</span>
+                <button id="btn-toggle" class="toggle-btn" type="button">OFF</button>
+              </div>
               <p id="status-text" class="input-hint">장치를 선택하고 ON을 켜세요</p>
             </div>
           </div>
@@ -765,6 +745,31 @@
               ></button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="control-section output-section" aria-label="Output export">
+        <div class="control-meta">
+          <div class="control-label">Output</div>
+        </div>
+        <div class="output-controls" role="toolbar" aria-label="Canvas capture and video recording">
+          <button id="btn-clear" class="output-btn" type="button">Clear</button>
+          <button
+            id="btn-record-video"
+            class="output-btn"
+            type="button"
+            title="캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
+            aria-pressed="false"
+          >
+            <span class="rec-dot" aria-hidden="true"></span>
+            <span class="rec-copy">
+              <span id="btn-record-video-title" class="rec-title">영상 녹화</span>
+              <span id="btn-record-video-hint" class="rec-hint">캔버스 → 동영상 파일 저장</span>
+            </span>
+          </button>
+          <button id="btn-capture" class="output-btn primary-btn" type="button" title="현재 화면을 PNG로 저장">
+            Capture
+          </button>
         </div>
       </section>
     </main>

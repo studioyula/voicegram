@@ -4,40 +4,16 @@
  */
 var VibeShapeComposition = (function () {
   var MOTIF_GROUPS = {
-    round: [
-      "circle",
-      "blob",
-      "capsule",
-      "pill",
-      "ring",
-      "halfCircle",
-      "arch",
-    ],
+    round: ["circle", "capsule", "pill", "ring"],
     sharp: [
       "triangle",
-      "star",
       "diamond",
+      "star",
       "smallTriangle",
       "smallDiamond",
-      "sunburst",
-      "outlineTriangle",
     ],
-    structural: [
-      "rect",
-      "longBar",
-      "stripeBlock",
-      "pixelStair",
-      "capsule",
-      "diamond",
-    ],
-    textural: [
-      "arc",
-      "orbitLine",
-      "squiggle",
-      "dotArc",
-      "smallDotGroup",
-      "dot",
-    ],
+    structural: ["rect", "longBar", "capsule", "diamond"],
+    textural: ["arc", "squiggle", "dotArc", "smallDotGroup", "dot"],
   };
 
   var TIER_CAP = {
@@ -50,11 +26,8 @@ var VibeShapeComposition = (function () {
   var STROKE_TYPES = {
     ring: true,
     arc: true,
-    arch: true,
-    outlineTriangle: true,
     orbitLine: true,
     squiggle: true,
-    dotArc: true,
   };
 
   function calcVoiceProfile(analysis) {
@@ -245,98 +218,74 @@ var VibeShapeComposition = (function () {
     var m = Math.min(w, h);
 
     if (tier === "main") {
-      return m * (0.1 + volQ * 0.04);
+      return m * (0.085 + volQ * 0.03);
+    }
+
+    if (tier === "mid") {
+      return m * (0.052 + volQ * 0.022);
     }
 
     if (tier === "line") {
-      return m * (0.08 + volQ * 0.03);
+      return m * (0.07 + volQ * 0.025);
     }
 
-    if (tier === "mid" || tier === "accent") {
-      return m * (0.06 + volQ * 0.03);
+    if (tier === "accent") {
+      return m * (0.024 + volQ * 0.014);
     }
 
-    return m * (0.035 + volQ * 0.018);
+    return m * 0.04;
   }
 
-  function drawHalfCircle(p, size) {
-    p.arc(0, 0, size, size, p.PI, p.TWO_PI, p.PIE);
+  function drawCleanStar(p, size) {
+    var outer = size * 0.45;
+    var inner = size * 0.22;
+    var points = 5;
+    var angle = p.TWO_PI / points;
+    var half = angle / 2;
+    var a;
+
+    p.beginShape();
+    for (a = -p.HALF_PI; a < p.TWO_PI - p.HALF_PI; a += angle) {
+      p.vertex(p.cos(a) * outer, p.sin(a) * outer);
+      p.vertex(p.cos(a + half) * inner, p.sin(a + half) * inner);
+    }
+    p.endShape(p.CLOSE);
   }
 
-  function drawArch(p, size) {
+  function drawCleanSquiggle(p, size) {
+    var steps = 28;
+    var i;
+    var t;
+    var x;
+    var y;
+    var amp = size * 0.11;
+    var len = size * 0.55;
+
     p.noFill();
-    p.strokeWeight(Math.max(1.4, size * 0.08));
-    p.arc(0, 0, size, size, p.PI, p.TWO_PI);
+    p.strokeWeight(Math.max(1.2, size * 0.04));
+    p.beginShape();
+
+    for (i = 0; i <= steps; i++) {
+      t = i / steps;
+      x = (t - 0.5) * len * 2;
+      y = Math.sin(t * Math.PI * 2.5) * amp;
+      p.vertex(x, y);
+    }
+
+    p.endShape();
   }
 
-  function drawLongBar(p, size) {
-    p.rectMode(p.CENTER);
-    p.rect(0, 0, size * 1.7, size * 0.22, size * 0.04);
-  }
-
-  function drawDotArc(p, size) {
-    var count = 9;
+  function drawDotArcFilled(p, size) {
+    var count = 8;
     var i;
     var a;
-    var r = size * 0.48;
-    var d = size * 0.08;
+    var r = size * 0.42;
+    var d = size * 0.07;
 
     for (i = 0; i < count; i++) {
-      a = p.map(i, 0, count - 1, -p.PI * 0.85, p.PI * 0.35);
+      a = p.map(i, 0, count - 1, -p.PI * 0.85, p.PI * 0.25);
       p.circle(Math.cos(a) * r, Math.sin(a) * r, d);
     }
-  }
-
-  function drawPixelStair(p, size) {
-    var unit = size * 0.18;
-    var i;
-    p.rectMode(p.CENTER);
-
-    for (i = 0; i < 6; i++) {
-      p.rect(
-        -size * 0.35 + i * unit,
-        size * 0.28 - i * unit * 0.8,
-        unit,
-        unit
-      );
-    }
-  }
-
-  function drawStripeBlock(p, size) {
-    var rw = size * 1.1;
-    var rh = size * 0.75;
-    var stripeH = rh / 7;
-    var i;
-
-    p.rectMode(p.CENTER);
-
-    for (i = 0; i < 7; i++) {
-      if (i % 2 === 0) {
-        p.rect(0, -rh / 2 + i * stripeH + stripeH / 2, rw, stripeH * 0.75);
-      }
-    }
-  }
-
-  function drawSunburst(p, size) {
-    var count = 20;
-    var i;
-    var a;
-    p.rectMode(p.CENTER);
-
-    for (i = 0; i < count; i++) {
-      a = (i / count) * p.TWO_PI;
-      p.push();
-      p.rotate(a);
-      p.rect(size * 0.32, 0, size * 0.26, size * 0.035);
-      p.pop();
-    }
-  }
-
-  function drawOutlineTriangle(p, size) {
-    var th = size * 0.866;
-    p.noFill();
-    p.strokeWeight(Math.max(1.2, size * 0.028));
-    p.triangle(0, -th * 0.55, -size * 0.48, th * 0.38, size * 0.48, th * 0.38);
   }
 
   function seededUnit(seed, i) {
@@ -358,26 +307,84 @@ var VibeShapeComposition = (function () {
   }
 
   function drawShapeBody(p, typ, size, seed) {
-    if (typ === "halfCircle") {
-      drawHalfCircle(p, size);
-    } else if (typ === "arch") {
-      drawArch(p, size);
+    if (typ === "circle") {
+      p.circle(0, 0, size);
+    } else if (typ === "ring") {
+      p.noFill();
+      p.strokeWeight(Math.max(1.4, size * 0.055));
+      p.circle(0, 0, size);
+    } else if (typ === "capsule") {
+      p.rectMode(p.CENTER);
+      p.rect(0, 0, size * 1.05, size * 0.42, size * 0.21);
+    } else if (typ === "pill") {
+      p.rectMode(p.CENTER);
+      p.rect(0, 0, size * 0.42, size * 1.05, size * 0.21);
+    } else if (typ === "rect") {
+      p.rectMode(p.CENTER);
+      p.rect(0, 0, size * 0.95, size * 0.58, size * 0.045);
     } else if (typ === "longBar") {
-      drawLongBar(p, size);
+      p.rectMode(p.CENTER);
+      p.rect(0, 0, size * 1.45, size * 0.18, size * 0.04);
+    } else if (typ === "triangle") {
+      var th = size * 0.866;
+      p.triangle(
+        0,
+        -th * 0.55,
+        -size * 0.48,
+        th * 0.38,
+        size * 0.48,
+        th * 0.38
+      );
+    } else if (typ === "smallTriangle") {
+      var ts = size * 0.68;
+      var sth = ts * 0.866;
+      p.triangle(
+        0,
+        -sth * 0.55,
+        -ts * 0.48,
+        sth * 0.38,
+        ts * 0.48,
+        sth * 0.38
+      );
+    } else if (typ === "diamond") {
+      p.quad(
+        0,
+        -size * 0.48,
+        size * 0.36,
+        0,
+        0,
+        size * 0.48,
+        -size * 0.36,
+        0
+      );
+    } else if (typ === "smallDiamond") {
+      var ds = size * 0.68;
+      p.quad(
+        0,
+        -ds * 0.48,
+        ds * 0.36,
+        0,
+        0,
+        ds * 0.48,
+        -ds * 0.36,
+        0
+      );
+    } else if (typ === "star") {
+      drawCleanStar(p, size);
+    } else if (typ === "arc") {
+      p.noFill();
+      p.strokeWeight(Math.max(1.3, size * 0.045));
+      p.arc(0, 0, size, size, -p.PI * 0.68, p.PI * 0.68);
+    } else if (typ === "squiggle") {
+      drawCleanSquiggle(p, size);
     } else if (typ === "dotArc") {
-      drawDotArc(p, size);
-    } else if (typ === "pixelStair") {
-      drawPixelStair(p, size);
-    } else if (typ === "stripeBlock") {
-      drawStripeBlock(p, size);
-    } else if (typ === "sunburst") {
-      drawSunburst(p, size);
-    } else if (typ === "outlineTriangle") {
-      drawOutlineTriangle(p, size);
+      drawDotArcFilled(p, size);
     } else if (typ === "smallDotGroup") {
       drawSmallDotGroup(p, size, seed);
+    } else if (typ === "dot") {
+      p.circle(0, 0, size * 0.22);
     } else {
-      VibeUtils.drawShape(p, typ, size, 0);
+      p.circle(0, 0, size * 0.6);
     }
   }
 
@@ -392,10 +399,13 @@ var VibeShapeComposition = (function () {
     p.translate(pc.x, pc.y);
     p.rotate(pc.rotation);
 
-    if (ctx && sz > 0) {
+    if (ctx) {
       ctx.shadowBlur = 0;
       ctx.shadowColor = "rgba(0,0,0,0)";
     }
+
+    if (p.strokeCap) p.strokeCap(p.ROUND);
+    if (p.strokeJoin) p.strokeJoin(p.ROUND);
 
     if (strokeMotif) {
       p.stroke(c.h, c.s, c.b, al);
@@ -407,9 +417,6 @@ var VibeShapeComposition = (function () {
 
     drawShapeBody(p, pc.type, sz, pc.seed);
 
-    if (ctx) {
-      ctx.shadowBlur = 0;
-    }
     p.noStroke();
     p.pop();
   }
@@ -437,9 +444,22 @@ var VibeShapeComposition = (function () {
 
     var sz = baseSizeForTier(tier, volQ01, w, h);
 
-    if (typ === "dot") sz *= 0.55;
-    if (typ === "smallTriangle" || typ === "smallDiamond") sz *= 0.65;
-    if (typ === "smallDotGroup") sz *= 0.8;
+    if (typ === "dot") sz *= 0.42;
+    if (typ === "smallTriangle" || typ === "smallDiamond") sz *= 0.58;
+    if (typ === "smallDotGroup") sz *= 0.72;
+    if (typ === "star" && tier === "accent") sz *= 0.72;
+    if (typ === "ring") sz *= 0.9;
+
+    var rot = p.random(0, p.TWO_PI);
+    if (
+      typ === "rect" ||
+      typ === "longBar" ||
+      typ === "capsule" ||
+      typ === "pill"
+    ) {
+      var angles = [0, p.HALF_PI, -p.HALF_PI, p.PI * 0.08, -p.PI * 0.08];
+      rot = angles[Math.floor(p.random(angles.length))];
+    }
 
     state.pieceId++;
 
@@ -461,7 +481,7 @@ var VibeShapeComposition = (function () {
       y: js.ny * h,
       baseSize: sz,
       displaySize: sz,
-      rotation: p.random(0, p.TWO_PI),
+      rotation: rot,
       rotVel: p.random(-0.01, 0.01) * (1 + (analysis.delta || 0) * 2),
       color: col,
       alpha: 0,

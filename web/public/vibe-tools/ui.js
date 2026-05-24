@@ -250,7 +250,7 @@ var VibeUI = (function () {
       onBegin: function () {
         setRecordUi(true);
         if (audio.sourceMode === "mic") {
-          setMicLabel("녹화 중… 우측 하단 「녹화 중지」를 누르면 저장");
+          setMicLabel("녹화 중… 오른쪽 Output에서 「녹화 중지」를 누르면 저장");
         } else {
           setFileLabel("녹화 중… 「녹화 중지」를 누르면 저장 (파일 소리는 미포함)");
         }

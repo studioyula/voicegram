@@ -19,21 +19,39 @@ var VibeRecorder = (function () {
   }
 
   function pickMimeType(hasAudio) {
-    var videoOnly = [
+    /* Prefer MP4 (H.264 + AAC/Opus) when the browser exposes it — order matters. */
+    var mp4WithAudio = [
+      "video/mp4; codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4; codecs=avc1.4D401E,mp4a.40.2",
+      "video/mp4; codecs=avc1.640028,mp4a.40.2",
+      "video/mp4; codecs=avc1.64003E,mp4a.40.2",
+      "video/mp4; codecs=avc3.42001E,mp4a.40.2",
+      "video/mp4; codecs=avc1.64003E,opus",
+      "video/mp4; codecs=avc1.42E01E,opus",
+      "video/mp4",
+    ];
+    var mp4VideoOnly = [
       "video/mp4; codecs=avc1.42E01E",
       "video/mp4; codecs=avc1.4D401E",
+      "video/mp4; codecs=avc1.640028",
+      "video/mp4; codecs=avc1.64003E",
+      "video/mp4; codecs=avc3.42001E",
       "video/mp4",
-      "video/webm; codecs=vp9",
-      "video/webm; codecs=vp8",
-      "video/webm",
     ];
-    var withAudio = [
+    var webmWithAudio = [
       "video/webm; codecs=vp9,opus",
       "video/webm; codecs=vp8,opus",
       "video/webm; codecs=vp9",
       "video/webm",
     ];
-    var list = hasAudio ? withAudio : videoOnly;
+    var webmVideoOnly = [
+      "video/webm; codecs=vp9",
+      "video/webm; codecs=vp8",
+      "video/webm",
+    ];
+    var list = hasAudio
+      ? mp4WithAudio.concat(webmWithAudio)
+      : mp4VideoOnly.concat(webmVideoOnly);
     var i;
     if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) {
       return "";
@@ -131,19 +149,41 @@ var VibeRecorder = (function () {
       micStream.getAudioTracks().length > 0;
 
     chosenMime = pickMimeType(hasAudio);
-    if (!chosenMime) {
-      fail("NO_CODEC", "MediaRecorder has no supported mime type");
-      return false;
-    }
 
     chunks = [];
+    var recOpts = { videoBitsPerSecond: 6000000 };
+    if (chosenMime) {
+      recOpts.mimeType = chosenMime;
+    }
     try {
-      recorder = new MediaRecorder(stream, {
-        mimeType: chosenMime,
-        videoBitsPerSecond: 6000000,
-      });
+      recorder = new MediaRecorder(stream, recOpts);
     } catch (err) {
-      fail("RECORDER_CREATE", err && err.message ? err.message : String(err));
+      if (chosenMime) {
+        try {
+          recorder = new MediaRecorder(stream, {
+            videoBitsPerSecond: 6000000,
+          });
+        } catch (err2) {
+          fail(
+            "RECORDER_CREATE",
+            err2 && err2.message ? err2.message : String(err2)
+          );
+          return false;
+        }
+      } else {
+        fail(
+          "RECORDER_CREATE",
+          err && err.message ? err.message : String(err)
+        );
+        return false;
+      }
+    }
+
+    if (recorder.mimeType) {
+      chosenMime = recorder.mimeType;
+    }
+    if (!chosenMime) {
+      fail("NO_CODEC", "MediaRecorder has no usable mime type");
       return false;
     }
 
