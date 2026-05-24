@@ -45,6 +45,11 @@ var VibeAudio = (function () {
     this.prevTotalEnergy = 0;
   };
 
+  /** Live mic MediaStream for canvas+mic video recording (do not stop from UI). */
+  AudioManager.prototype.getMicMediaStream = function () {
+    return this.micStream || null;
+  };
+
   AudioManager.prototype.startContext = function () {
     if (typeof this.p.userStartAudio === "function") {
       this.p.userStartAudio();

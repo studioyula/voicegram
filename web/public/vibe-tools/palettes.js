@@ -71,6 +71,269 @@ var VibePalettes = (function () {
 
   var active = "mono";
 
+  var activeShapeBackground = "white";
+
+  /** Shape mode canvas only — do not use palette family `bg` for Shape fill. */
+  var shapeBackgrounds = {
+    white: { name: "White", bg: [0, 0, 100] },
+    black: { name: "Black", bg: [0, 0, 4] },
+  };
+
+  function setShapeBackground(id) {
+    if (shapeBackgrounds[id]) {
+      activeShapeBackground = id;
+    }
+  }
+
+  function getShapeBackground() {
+    var def = shapeBackgrounds[activeShapeBackground] || shapeBackgrounds.white;
+    return {
+      id: activeShapeBackground,
+      name: def.name,
+      bg: def.bg,
+    };
+  }
+
+  /** Poster-style HSB bases — fallback when calcShapeCompositionColor has no voiceProfile. */
+  var shapeCompositionFamilies = {
+    brightPoster: {
+      bass: { h: 12, s: 90, b: 96 },
+      mid: { h: 205, s: 76, b: 96 },
+      treble: { h: 52, s: 92, b: 98 },
+      accent: { h: 285, s: 62, b: 94 },
+      line: { h: 215, s: 42, b: 36 },
+    },
+    structGrid: {
+      bass: { h: 198, s: 84, b: 90 },
+      mid: { h: 218, s: 48, b: 94 },
+      treble: { h: 168, s: 72, b: 97 },
+      accent: { h: 38, s: 88, b: 96 },
+      line: { h: 0, s: 0, b: 40 },
+    },
+  };
+
+  /**
+   * Shape-only Poundstone swatches (HSB) derived from poundstone_palette_preview.html
+   * Combined palette + VOICEGRAM groups; near-neutral page chrome excluded.
+   */
+  var shapePoundstoneColors = {
+    warm: [
+      { h: 356, s: 36, b: 98 },
+      { h: 1, s: 46, b: 98 },
+      { h: 26, s: 36, b: 97 },
+      { h: 47, s: 45, b: 99 },
+      { h: 38, s: 55, b: 96 },
+      { h: 12, s: 52, b: 78 },
+      { h: 2, s: 42, b: 98 },
+      { h: 31, s: 24, b: 78 },
+      { h: 5, s: 43, b: 99 },
+      { h: 18, s: 33, b: 88 },
+    ],
+    cool: [
+      { h: 198, s: 35, b: 98 },
+      { h: 228, s: 40, b: 97 },
+      { h: 183, s: 37, b: 84 },
+      { h: 196, s: 59, b: 84 },
+      { h: 220, s: 66, b: 88 },
+      { h: 182, s: 40, b: 83 },
+      { h: 184, s: 51, b: 80 },
+      { h: 206, s: 28, b: 97 },
+      { h: 186, s: 32, b: 88 },
+      { h: 187, s: 38, b: 85 },
+    ],
+    bright: [
+      { h: 272, s: 68, b: 98 },
+      { h: 341, s: 75, b: 81 },
+      { h: 302, s: 49, b: 84 },
+      { h: 10, s: 46, b: 99 },
+      { h: 50, s: 48, b: 99 },
+      { h: 300, s: 77, b: 99 },
+      { h: 338, s: 70, b: 88 },
+      { h: 8, s: 59, b: 100 },
+      { h: 13, s: 59, b: 98 },
+      { h: 42, s: 73, b: 99 },
+    ],
+    soft: [
+      { h: 261, s: 25, b: 94 },
+      { h: 55, s: 27, b: 94 },
+      { h: 329, s: 19, b: 85 },
+      { h: 356, s: 19, b: 95 },
+      { h: 67, s: 53, b: 78 },
+      { h: 346, s: 14, b: 96 },
+      { h: 181, s: 22, b: 91 },
+      { h: 20, s: 18, b: 93 },
+      { h: 187, s: 28, b: 88 },
+      { h: 79, s: 24, b: 90 },
+    ],
+    dark: [
+      { h: 340, s: 78, b: 78 },
+      { h: 344, s: 81, b: 78 },
+      { h: 338, s: 82, b: 76 },
+      { h: 4, s: 45, b: 68 },
+      { h: 356, s: 61, b: 71 },
+      { h: 10, s: 64, b: 77 },
+      { h: 214, s: 79, b: 82 },
+      { h: 345, s: 74, b: 91 },
+      { h: 18, s: 52, b: 79 },
+      { h: 7, s: 50, b: 78 },
+    ],
+  };
+
+  /** Shape-only: curated 3-color + line per voice profile (no full Poundstone pick). */
+  var shapeCuratedPalettes = {
+    white: {
+      round: {
+        main: { h: 14, s: 72, b: 92 },
+        mid: { h: 32, s: 62, b: 95 },
+        accent: { h: 340, s: 72, b: 92 },
+        line: { h: 0, s: 0, b: 12 },
+      },
+      sharp: {
+        main: { h: 333, s: 78, b: 94 },
+        mid: { h: 265, s: 68, b: 92 },
+        accent: { h: 48, s: 90, b: 96 },
+        line: { h: 0, s: 0, b: 12 },
+      },
+      structural: {
+        main: { h: 206, s: 72, b: 88 },
+        mid: { h: 184, s: 58, b: 84 },
+        accent: { h: 18, s: 78, b: 94 },
+        line: { h: 0, s: 0, b: 12 },
+      },
+      textural: {
+        main: { h: 186, s: 64, b: 86 },
+        mid: { h: 310, s: 68, b: 88 },
+        accent: { h: 42, s: 88, b: 96 },
+        line: { h: 0, s: 0, b: 12 },
+      },
+    },
+    black: {
+      round: {
+        main: { h: 16, s: 68, b: 98 },
+        mid: { h: 34, s: 54, b: 96 },
+        accent: { h: 340, s: 68, b: 96 },
+        line: { h: 0, s: 0, b: 96 },
+      },
+      sharp: {
+        main: { h: 326, s: 76, b: 98 },
+        mid: { h: 268, s: 62, b: 96 },
+        accent: { h: 52, s: 86, b: 100 },
+        line: { h: 0, s: 0, b: 96 },
+      },
+      structural: {
+        main: { h: 208, s: 68, b: 96 },
+        mid: { h: 184, s: 56, b: 92 },
+        accent: { h: 18, s: 76, b: 98 },
+        line: { h: 0, s: 0, b: 96 },
+      },
+      textural: {
+        main: { h: 188, s: 62, b: 96 },
+        mid: { h: 310, s: 62, b: 96 },
+        accent: { h: 44, s: 84, b: 100 },
+        line: { h: 0, s: 0, b: 96 },
+      },
+    },
+  };
+
+  function getShapeFamilyForProfile(profile) {
+    if (!profile) return "brightPoster";
+    if (profile.dominant === "structural") return "structGrid";
+    return "brightPoster";
+  }
+
+  function calcShapeCompositionColor(famId, role, centroid, peakFreq, voiceProfile) {
+    var canvas = getShapeBackground();
+    var canvasId = canvas.id || "white";
+    var bgB = canvas.bg ? canvas.bg[2] : 100;
+
+    var profile = voiceProfile || "structural";
+    var palSet = shapeCuratedPalettes[canvasId] || shapeCuratedPalettes.white;
+    var pal = palSet[profile] || palSet.structural;
+
+    var key = "mid";
+
+    if (role === "line") {
+      key = "line";
+    } else if (role === "accent" || role === "treble") {
+      key = "accent";
+    } else if (role === "bass") {
+      key = "main";
+    } else {
+      key = "mid";
+    }
+
+    var base = pal[key] || pal.mid;
+
+    if (key === "line") {
+      return {
+        h: base.h,
+        s: base.s,
+        b: base.b,
+      };
+    }
+
+    var c = centroid != null ? centroid : 0.5;
+
+    var s = VibeUtils.clamp(
+      base.s * VibeUtils.mapValue(c, 0, 1, 0.96, 1.06),
+      0,
+      100
+    );
+
+    var b = VibeUtils.clamp(
+      base.b * VibeUtils.mapValue(c, 0, 1, 0.94, 1.04),
+      0,
+      100
+    );
+
+    var h = base.h;
+
+    var hueShift = VibeUtils.mapValue(peakFreq || 400, 80, 7000, -5, 5);
+    h = (h + hueShift + 360) % 360;
+
+    if (bgB > 50) {
+      b = VibeUtils.clamp(b * 0.96, 0, 100);
+    } else {
+      b = VibeUtils.clamp(b * 1.04, 0, 100);
+    }
+
+    return { h: h, s: s, b: b };
+  }
+
+  function calcShapeCompositionColorLegacy(famId, role, centroid, peakFreq, bgB) {
+    var fam = shapeCompositionFamilies[famId] || shapeCompositionFamilies.brightPoster;
+    var base = fam[role] || fam.mid;
+    var isDarkCanvas = bgB < 50;
+
+    if (role === "line") {
+      if (isDarkCanvas) {
+        base = { h: 0, s: 0, b: 94 };
+      } else {
+        base = fam.line || { h: 215, s: 45, b: 34 };
+      }
+    }
+
+    var cMod = centroid != null ? centroid : 0.5;
+    var s = VibeUtils.clamp(
+      base.s * VibeUtils.mapValue(cMod, 0, 1, 0.72, 1.12),
+      0,
+      100
+    );
+    var br = VibeUtils.clamp(
+      base.b * VibeUtils.mapValue(cMod, 0, 1, 0.86, 1.06),
+      0,
+      100
+    );
+    var hueShift = VibeUtils.mapValue(peakFreq || 500, 60, 8000, -24, 24);
+    var h = (base.h + hueShift + 360) % 360;
+
+    return { h: h, s: s, b: br };
+  }
+
+  function getShapeBackgroundIds() {
+    return ["white", "black"];
+  }
+
   function getActive() {
     return palettes[active] || palettes.mono;
   }
@@ -412,6 +675,11 @@ var VibePalettes = (function () {
     active: active,
     palettes: palettes,
     getActive: getActive,
+    getShapeBackground: getShapeBackground,
+    getShapeBackgroundIds: getShapeBackgroundIds,
+    setShapeBackground: setShapeBackground,
+    getShapeFamilyForProfile: getShapeFamilyForProfile,
+    calcShapeCompositionColor: calcShapeCompositionColor,
     setActive: setActive,
     calcColor: calcColor,
     calcMosaicGray: calcMosaicGray,

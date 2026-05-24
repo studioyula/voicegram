@@ -20,6 +20,9 @@ var VibeUI = (function () {
     els.toggle = document.getElementById("btn-toggle");
     els.clear = document.getElementById("btn-clear");
     els.capture = document.getElementById("btn-capture");
+    els.recordVideo = document.getElementById("btn-record-video");
+    els.recordVideoTitle = document.getElementById("btn-record-video-title");
+    els.recordVideoHint = document.getElementById("btn-record-video-hint");
     els.fileInput = document.getElementById("file-input");
     els.fileLabel = document.getElementById("file-label");
     els.fileControls = document.getElementById("file-controls");
@@ -47,6 +50,9 @@ var VibeUI = (function () {
       window.VibeApp.getRenderer().clear();
     };
     els.capture.onclick = onCapture;
+    if (els.recordVideo) {
+      els.recordVideo.onclick = onRecordVideo;
+    }
     els.fileInput.onchange = onFileSelected;
     els.playPause.onclick = function () {
       audio.playFile();
@@ -71,32 +77,11 @@ var VibeUI = (function () {
     };
 
     setupModeButtons();
-    setupPaletteDots();
-    setupMosaicAspect();
+    setupShapeBackgroundDots();
     setupDebugToggle();
 
     setSource("file");
     updateToggleLabel();
-  }
-
-  function parseAspectValue(val) {
-    var parts = (val || "1-1").split("-");
-    var w = parseInt(parts[0], 10);
-    var h = parseInt(parts[1], 10);
-    if (isNaN(w) || w <= 0) w = 1;
-    if (isNaN(h) || h <= 0) h = 1;
-    return { w: w, h: h };
-  }
-
-  function setupMosaicAspect() {
-    els.mosaicAspect = document.getElementById("mosaic-aspect");
-    if (!els.mosaicAspect) return;
-    els.mosaicAspect.onchange = function () {
-      var parsed = parseAspectValue(els.mosaicAspect.value);
-      window.VibeApp.setMosaicAspect(parsed.w, parsed.h);
-    };
-    var first = parseAspectValue(els.mosaicAspect.value);
-    window.VibeApp.setMosaicAspect(first.w, first.h);
   }
 
   function setupModeButtons() {
@@ -106,6 +91,10 @@ var VibeUI = (function () {
       modeBtns[i].onclick = function () {
         var mode = this.getAttribute("data-mode");
         window.VibeApp.setMode(mode);
+        if (mode === "shape" && p5ref && VibePalettes.getShapeBackground) {
+          var sb = VibePalettes.getShapeBackground().bg;
+          p5ref.background(sb[0], sb[1], sb[2]);
+        }
         window.VibeApp.getRenderer().clear();
         var j;
         for (j = 0; j < modeBtns.length; j++) {
@@ -121,34 +110,46 @@ var VibeUI = (function () {
     updatePaletteAvailability();
   }
 
-  function setupPaletteDots() {
-    var palDots = document.querySelectorAll(".pal-dot");
+  function setupShapeBackgroundDots() {
+    var dots = document.querySelectorAll(".shape-bg-dot");
     var i;
-    for (i = 0; i < palDots.length; i++) {
-      palDots[i].onclick = function () {
-        if (window.VibeApp.getMode() === "mosaic") return;
-        var palId = this.getAttribute("data-pal");
-        VibePalettes.setActive(palId);
-        var bg = VibePalettes.getActive().bg;
+    for (i = 0; i < dots.length; i++) {
+      dots[i].onclick = function () {
+        if (window.VibeApp.getMode() !== "shape") return;
+        var id = this.getAttribute("data-shape-bg");
+        if (!id || !VibePalettes.setShapeBackground) return;
+        VibePalettes.setShapeBackground(id);
+        var bg = VibePalettes.getShapeBackground().bg;
         if (p5ref) p5ref.background(bg[0], bg[1], bg[2]);
         var j;
-        for (j = 0; j < palDots.length; j++) {
-          palDots[j].classList.remove("active");
+        for (j = 0; j < dots.length; j++) {
+          dots[j].classList.remove("active");
         }
         this.classList.add("active");
       };
     }
   }
 
+  function syncShapeBackgroundDots() {
+    var dots = document.querySelectorAll(".shape-bg-dot");
+    if (!dots.length || !VibePalettes.getShapeBackground) return;
+    var curId = VibePalettes.getShapeBackground().id;
+    var i;
+    var id;
+    for (i = 0; i < dots.length; i++) {
+      id = dots[i].getAttribute("data-shape-bg");
+      dots[i].classList.toggle("active", id === curId);
+    }
+  }
+
   function updatePaletteAvailability() {
     var isMosaic = window.VibeApp.getMode() === "mosaic";
-    var paletteWrap = document.querySelector(".palette-dots");
-    if (paletteWrap) {
-      paletteWrap.style.display = isMosaic ? "none" : "flex";
+    var row = document.getElementById("shape-bg-row");
+    if (row) {
+      row.style.display = isMosaic ? "none" : "flex";
     }
-    var aspectWrap = document.getElementById("mosaic-aspect-wrap");
-    if (aspectWrap) {
-      aspectWrap.classList.toggle("hidden", !isMosaic);
+    if (!isMosaic) {
+      syncShapeBackgroundDots();
     }
   }
 
@@ -169,6 +170,102 @@ var VibeUI = (function () {
       setMicLabel("캡처 저장됨");
     } else {
       setFileLabel("캡처 저장됨");
+    }
+  }
+
+  function setRecordUi(active) {
+    if (!els.recordVideo) return;
+    els.recordVideo.classList.toggle("recording", !!active);
+    els.recordVideo.setAttribute("aria-pressed", active ? "true" : "false");
+    if (els.recordVideoTitle) {
+      els.recordVideoTitle.textContent = active ? "녹화 중지" : "영상 녹화";
+    }
+    if (els.recordVideoHint) {
+      els.recordVideoHint.textContent = active
+        ? "누르면 동영상 파일로 저장됩니다"
+        : "누르면 화면 녹화가 시작됩니다 (MP4/WebM)";
+    }
+    els.recordVideo.setAttribute(
+      "title",
+      active
+        ? "녹화를 멈추고 파일로 저장합니다"
+        : "캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
+    );
+  }
+
+  function getAudioStreamForRecording() {
+    if (audio.sourceMode !== "mic") return null;
+    if (typeof audio.getMicMediaStream === "function") {
+      return audio.getMicMediaStream();
+    }
+    return null;
+  }
+
+  function recordingStatusMessage(info) {
+    var ext = info && info.ext ? info.ext : "webm";
+    var note =
+      ext === "mp4"
+        ? "MP4 저장됨"
+        : "WebM으로 저장됨 (이 브라우저는 MP4 인코딩 미지원)";
+    if (audio.sourceMode === "mic") {
+      setMicLabel(note);
+    } else {
+      setFileLabel(note);
+    }
+  }
+
+  function recordingErrorMessage(code) {
+    var msg =
+      code === "NO_CODEC"
+        ? "이 브라우저는 영상 녹화를 지원하지 않습니다"
+        : code === "NO_CANVAS"
+          ? "캔버스를 찾을 수 없습니다"
+          : "녹화 오류 — " + (code || "unknown");
+    if (audio.sourceMode === "mic") {
+      setMicLabel(msg);
+    } else {
+      setFileLabel(msg);
+    }
+  }
+
+  function onRecordVideo() {
+    if (typeof VibeRecorder === "undefined" || !VibeRecorder) {
+      recordingErrorMessage("NO_RECORDER");
+      return;
+    }
+    if (VibeRecorder.isRecording()) {
+      VibeRecorder.stop();
+      return;
+    }
+    audio.startContext();
+    if (!window.VibeApp || typeof window.VibeApp.getCanvas !== "function") {
+      recordingErrorMessage("NO_CANVAS");
+      return;
+    }
+    var ok = VibeRecorder.start({
+      getCanvas: function () {
+        return window.VibeApp.getCanvas();
+      },
+      getAudioStream: getAudioStreamForRecording,
+      onBegin: function () {
+        setRecordUi(true);
+        if (audio.sourceMode === "mic") {
+          setMicLabel("녹화 중… 우측 하단 「녹화 중지」를 누르면 저장");
+        } else {
+          setFileLabel("녹화 중… 「녹화 중지」를 누르면 저장 (파일 소리는 미포함)");
+        }
+      },
+      onEnd: function (info) {
+        setRecordUi(false);
+        recordingStatusMessage(info);
+      },
+      onError: function (code) {
+        setRecordUi(false);
+        recordingErrorMessage(code);
+      },
+    });
+    if (!ok) {
+      setRecordUi(false);
     }
   }
 
@@ -274,7 +371,10 @@ var VibeUI = (function () {
   function updateDebug() {
     var a = audio.lastAnalysis;
     var mode = window.VibeApp.getMode().toUpperCase();
-    var pal = VibePalettes.getActive().name;
+    var pal =
+      window.VibeApp.getMode() === "shape" && VibePalettes.getShapeBackground
+        ? VibePalettes.getShapeBackground().name
+        : VibePalettes.getActive().name;
     var shapeHint = "";
     if (a.isSound) {
       shapeHint = VibeUtils.shapeLabel(VibeUtils.selectShapeType(a));

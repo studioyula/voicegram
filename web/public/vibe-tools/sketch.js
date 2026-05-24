@@ -3,27 +3,14 @@
   var shapeRenderer;
   var mosaicRenderer;
   var currentMode = "mosaic";
-  var mosaicAspectW = 1;
-  var mosaicAspectH = 1;
 
   window.VibeApp = {
+    _canvasEl: null,
     getMode: function () {
       return currentMode;
     },
     setMode: function (mode) {
       currentMode = mode;
-    },
-    getMosaicAspect: function () {
-      return { w: mosaicAspectW, h: mosaicAspectH };
-    },
-    setMosaicAspect: function (w, h) {
-      var nw = typeof w === "number" && w > 0 ? w : 1;
-      var nh = typeof h === "number" && h > 0 ? h : 1;
-      mosaicAspectW = Math.min(8, Math.max(0.25, nw));
-      mosaicAspectH = Math.min(8, Math.max(0.25, nh));
-      if (mosaicRenderer && typeof mosaicRenderer.invalidateLayout === "function") {
-        mosaicRenderer.invalidateLayout();
-      }
     },
     getRenderer: function () {
       return currentMode === "mosaic" ? mosaicRenderer : shapeRenderer;
@@ -33,6 +20,11 @@
     },
     getMosaicRenderer: function () {
       return mosaicRenderer;
+    },
+    getCanvas: function () {
+      if (this._canvasEl) return this._canvasEl;
+      var host = document.getElementById("canvas-host");
+      return host && host.querySelector ? host.querySelector("canvas") : null;
     },
   };
 
@@ -49,6 +41,7 @@
       var size = getCanvasHostSize();
       var c = p.createCanvas(size.width, size.height);
       c.parent("canvas-host");
+      window.VibeApp._canvasEl = c.elt ? c.elt : c.canvas;
       p.colorMode(p.HSB, 360, 100, 100, 100);
       var bg = VibePalettes.getActive().bg;
       p.background(bg[0], bg[1], bg[2]);
@@ -79,8 +72,8 @@
 
   window.addEventListener("DOMContentLoaded", function () {
     if (typeof p5 === "undefined") {
-      var failLabel = document.getElementById("file-label");
-      if (failLabel) failLabel.textContent = "P5 FAILED — RELOAD";
+      document.getElementById("status-text").textContent =
+        "P5 FAILED — RELOAD";
       return;
     }
     new p5(sketch);

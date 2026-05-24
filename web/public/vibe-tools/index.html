@@ -26,9 +26,9 @@
         --space-4: 16px;
         --space-5: 20px;
         --space-6: 24px;
-        --radius-sm: 4px;
-        --radius-md: 6px;
-        --radius-lg: 8px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
         --radius-full: 999px;
         --font-ui: "Helvetica Neue", "Apple SD Gothic Neo", "Pretendard", Arial, sans-serif;
         --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Menlo", monospace;
@@ -100,11 +100,6 @@
         letter-spacing: -0.03em;
       }
 
-      .top-actions {
-        display: flex;
-        gap: var(--space-2);
-      }
-
       button,
       input,
       select {
@@ -143,6 +138,149 @@
         background: #2a2a2a;
         border-color: #2a2a2a;
         color: #fff;
+      }
+
+      .canvas-actions {
+        position: fixed;
+        z-index: 11;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: flex-end;
+        gap: var(--space-2);
+        right: calc(var(--sidebar-w) + var(--space-6) + var(--space-4));
+        bottom: var(--space-6);
+        max-width: calc(100vw - var(--sidebar-w) - var(--space-6) * 3 - var(--space-4));
+        padding: var(--space-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(12px) saturate(1.05);
+        -webkit-backdrop-filter: blur(12px) saturate(1.05);
+        pointer-events: none;
+      }
+
+      .canvas-actions > * {
+        pointer-events: auto;
+      }
+
+      #btn-record-video {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 8px 16px 8px 14px;
+        border: 2px solid #b71c1c;
+        border-radius: var(--radius-md);
+        background: linear-gradient(165deg, #ff5252 0%, #d32f2f 55%, #c62828 100%);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+        text-align: left;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+          0 6px 20px rgba(198, 40, 40, 0.45);
+      }
+
+      #btn-record-video:hover {
+        background: linear-gradient(165deg, #ff6e6e 0%, #e53935 55%, #d32f2f 100%);
+        filter: brightness(1.04);
+        border-color: #7f1010;
+        color: #fff;
+      }
+
+      #btn-record-video .rec-dot {
+        flex-shrink: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+        animation: rec-dot-pulse 1.4s ease-in-out infinite;
+      }
+
+      #btn-record-video .rec-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      #btn-record-video .rec-title {
+        font-size: 13px;
+        font-weight: 750;
+        letter-spacing: -0.03em;
+      }
+
+      #btn-record-video .rec-hint {
+        font-size: 10px;
+        font-weight: 550;
+        opacity: 0.92;
+        letter-spacing: -0.01em;
+      }
+
+      #btn-record-video.recording {
+        background: linear-gradient(165deg, #2d2d2d 0%, #1a1a1a 100%);
+        border-color: #ef5350;
+        color: #fff;
+        box-shadow:
+          0 0 0 1px rgba(239, 83, 80, 0.35) inset,
+          0 0 0 3px rgba(239, 83, 80, 0.25),
+          0 6px 24px rgba(0, 0, 0, 0.35);
+        animation: record-pulse 1.1s ease-in-out infinite;
+      }
+
+      #btn-record-video.recording:hover {
+        filter: brightness(1.08);
+        color: #fff;
+      }
+
+      #btn-record-video.recording .rec-dot {
+        border-radius: 2px;
+        background: #ff1744;
+        box-shadow: 0 0 10px rgba(255, 23, 68, 0.9);
+        animation: rec-recording-blink 0.9s steps(2, end) infinite;
+      }
+
+      @keyframes rec-dot-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(0.92);
+          opacity: 0.85;
+        }
+      }
+
+      @keyframes rec-recording-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.45;
+        }
+      }
+
+      @keyframes record-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 1px rgba(239, 83, 80, 0.35) inset,
+            0 0 0 3px rgba(239, 83, 80, 0.22),
+            0 6px 24px rgba(0, 0, 0, 0.35);
+        }
+        50% {
+          box-shadow:
+            0 0 0 1px rgba(239, 83, 80, 0.5) inset,
+            0 0 0 5px rgba(239, 83, 80, 0.12),
+            0 8px 28px rgba(0, 0, 0, 0.4);
+        }
       }
 
       .controlbar {
@@ -202,7 +340,7 @@
       .tab-btn {
         min-height: 36px;
         border: 0;
-        border-radius: var(--radius-sm);
+        border-radius: 10px;
         background: transparent;
         color: var(--ink-tertiary);
         font-size: 13px;
@@ -255,44 +393,48 @@
         color: #fff;
       }
 
-      .source-field-label {
-        display: inline-flex;
-        flex-shrink: 0;
-        min-height: 28px;
+      .analysis-control {
+        display: flex;
         align-items: center;
-        padding: 0 10px;
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--fill-subtle);
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: var(--space-3) 0 0;
+        border-top: 1px solid var(--border);
+      }
+
+      .analysis-control.hidden {
+        display: none;
+      }
+
+      .analysis-label {
         color: var(--ink-secondary);
+        font-size: 12px;
+        font-weight: 550;
+      }
+
+      .toggle-btn {
+        min-height: 28px;
+        min-width: 52px;
+        padding: 0 10px;
         font-size: 11px;
         font-weight: 600;
-        white-space: nowrap;
       }
 
-      .inline-select {
-        flex: 1;
-        min-width: 0;
-        min-height: 28px;
-        padding: 0 28px 0 10px;
-        border: 1px solid var(--border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--fill-subtle);
-        color: var(--ink);
-        font-size: 11px;
-        font-weight: 550;
-        cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238a8a8a' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        transition: background-color 0.12s ease, border-color 0.12s ease;
+      .toggle-btn.on {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #fff;
       }
 
-      .inline-select:hover {
-        background-color: var(--surface);
-        border-color: var(--ink-tertiary);
+      .toggle-btn.on::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        margin-right: 5px;
+        border-radius: 50%;
+        background: #6ee07a;
+        vertical-align: 1px;
       }
 
       .input-hint,
@@ -307,16 +449,6 @@
         display: grid;
         gap: var(--space-4);
         min-width: 0;
-      }
-
-      .source-block {
-        display: grid;
-        gap: var(--space-2);
-        min-width: 0;
-      }
-
-      .source-subline {
-        padding-left: 2px;
       }
 
       .sub-controls.hidden {
@@ -375,41 +507,12 @@
         gap: var(--space-2);
       }
 
-      .playback-stack > button {
+      #btn-play-pause {
         min-width: 64px;
         min-height: 32px;
         font-size: 11px;
         font-weight: 650;
         letter-spacing: 0.04em;
-      }
-
-      .playback-stack > button.on {
-        border-color: var(--ink);
-        background: var(--ink);
-        color: #fff;
-      }
-
-      .playback-stack > button.on:hover {
-        background: #2a2a2a;
-        border-color: #2a2a2a;
-        color: #fff;
-      }
-
-      .activity-track {
-        width: 100%;
-        height: 3px;
-        border-radius: var(--radius-full);
-        background: var(--border);
-        overflow: hidden;
-      }
-
-      .activity-fill {
-        display: block;
-        width: 0%;
-        height: 100%;
-        border-radius: inherit;
-        background: var(--ink);
-        transition: width 0.08s linear;
       }
 
       input[type="range"] {
@@ -448,22 +551,20 @@
         cursor: pointer;
       }
 
+      #mic-device {
+        width: 100%;
+        min-height: 32px;
+        padding: 0 var(--space-3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 12px;
+      }
+
       .palette-row {
         display: grid;
         gap: var(--space-2);
-      }
-
-      .mosaic-aspect-wrap {
-        display: grid;
-        gap: var(--space-2);
-      }
-
-      .mosaic-aspect-wrap.hidden {
-        display: none;
-      }
-
-      .aspect-select {
-        width: 100%;
       }
 
       .palette-label {
@@ -513,7 +614,7 @@
         max-width: calc(100vw - 48px);
         padding: 6px 12px;
         border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-full);
         background: rgba(255, 255, 255, 0.9);
         color: var(--ink-tertiary);
         font-size: 10px;
@@ -557,21 +658,42 @@
           right: var(--space-4);
           bottom: 300px;
         }
+
+        .canvas-actions {
+          right: var(--space-3);
+          bottom: 300px;
+          max-width: calc(100vw - var(--space-3) * 2);
+        }
       }
     </style>
   </head>
   <body>
     <div id="canvas-host"></div>
 
-    <header class="topbar" aria-label="Voicegram controls">
+    <header class="topbar" aria-label="Voicegram header">
       <div class="brand-logo">
         <span>VOICEGRAM</span>
       </div>
-      <div class="top-actions">
-        <button id="btn-clear" type="button">Clear</button>
-        <button id="btn-capture" class="primary-btn" type="button" title="Save PNG">Export</button>
-      </div>
     </header>
+
+    <div class="canvas-actions" role="toolbar" aria-label="Canvas capture and video recording">
+      <button id="btn-clear" type="button">Clear</button>
+      <button
+        id="btn-record-video"
+        type="button"
+        title="캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
+        aria-pressed="false"
+      >
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span class="rec-copy">
+          <span id="btn-record-video-title" class="rec-title">영상 녹화</span>
+          <span id="btn-record-video-hint" class="rec-hint">캔버스 → 동영상 파일 저장</span>
+        </span>
+      </button>
+      <button id="btn-capture" class="primary-btn" type="button" title="현재 화면을 PNG로 저장">
+        Capture
+      </button>
+    </div>
 
     <main class="controlbar" aria-label="Audio and visual controls">
       <section class="control-section source-section" aria-label="Input source controls">
@@ -584,6 +706,11 @@
               <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
               <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
             </div>
+          </div>
+
+          <div id="analysis-control" class="analysis-control hidden">
+            <span class="analysis-label">소리 입력</span>
+            <button id="btn-toggle" class="toggle-btn" type="button">OFF</button>
           </div>
 
           <div class="input-area">
@@ -600,19 +727,8 @@
             </div>
 
             <div id="mic-controls" class="sub-controls hidden">
-              <div class="source-block">
-                <div class="file-row">
-                  <span class="source-field-label">장치</span>
-                  <select id="mic-device" class="inline-select"></select>
-                </div>
-                <span id="mic-label" class="file-status-text source-subline">장치를 선택하고 ON을 누르세요</span>
-              </div>
-              <div class="playback-stack">
-                <button id="btn-toggle" type="button">OFF</button>
-                <div class="activity-track" aria-hidden="true">
-                  <span id="mic-activity-fill" class="activity-fill"></span>
-                </div>
-              </div>
+              <select id="mic-device"></select>
+              <p id="status-text" class="input-hint">장치를 선택하고 ON을 켜세요</p>
             </div>
           </div>
         </div>
@@ -628,29 +744,25 @@
             <button class="mode-btn active" type="button" data-mode="mosaic">MOSAIC</button>
           </div>
 
-          <div id="mosaic-aspect-wrap" class="mosaic-aspect-wrap">
-            <span class="palette-label">Frame</span>
-            <select id="mosaic-aspect" class="inline-select aspect-select" aria-label="Mosaic frame aspect ratio">
-              <option value="1-1" selected>1 : 1</option>
-              <option value="4-3">4 : 3</option>
-              <option value="3-4">3 : 4</option>
-              <option value="16-9">16 : 9</option>
-              <option value="9-16">9 : 16</option>
-              <option value="21-9">21 : 9</option>
-              <option value="2-1">2 : 1</option>
-              <option value="1-2">1 : 2</option>
-            </select>
-          </div>
-
-          <div class="palette-row">
-            <span class="palette-label">Palette</span>
+          <div class="palette-row" id="shape-bg-row">
+            <span class="palette-label">Background</span>
             <div class="palette-dots">
-              <button class="pal-dot active" type="button" data-pal="mono" title="Mono" aria-label="Mono" style="background:#ffffff"></button>
-              <button class="pal-dot" type="button" data-pal="neonFire" title="Fire" aria-label="Fire" style="background:#ff4422"></button>
-              <button class="pal-dot" type="button" data-pal="ocean" title="Ocean" aria-label="Ocean" style="background:#4488ff"></button>
-              <button class="pal-dot" type="button" data-pal="candy" title="Candy" aria-label="Candy" style="background:#ff66aa"></button>
-              <button class="pal-dot" type="button" data-pal="acid" title="Acid" aria-label="Acid" style="background:#44ff66"></button>
-              <button class="pal-dot" type="button" data-pal="vivid" title="Vivid" aria-label="Vivid" style="background:linear-gradient(135deg,#ff2222 50%,#4488ff 50%)"></button>
+              <button
+                class="pal-dot shape-bg-dot active"
+                type="button"
+                data-shape-bg="white"
+                title="White"
+                aria-label="White canvas"
+                style="background: #ffffff; border: 1px solid #d8d8d4"
+              ></button>
+              <button
+                class="pal-dot shape-bg-dot"
+                type="button"
+                data-shape-bg="black"
+                title="Black"
+                aria-label="Black canvas"
+                style="background: #111111"
+              ></button>
             </div>
           </div>
         </div>
@@ -667,8 +779,10 @@
     <script src="poundstone_colors.js"></script>
     <script src="palettes.js"></script>
     <script src="audio.js"></script>
+    <script src="shape-composition.js"></script>
     <script src="renderer-shape.js"></script>
     <script src="renderer-mosaic.js"></script>
+    <script src="recorder.js"></script>
     <script src="ui.js"></script>
     <script src="sketch.js"></script>
   </body>

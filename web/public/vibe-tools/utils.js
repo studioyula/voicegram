@@ -131,9 +131,30 @@ var VibeUtils = (function () {
   }
 
   function drawShapeAtOrigin(p, type, size) {
+    var th;
+    var s;
+    var arm;
+    var len;
+    var i;
+    var n;
+    var r;
+    var ang;
+    var steps;
+    var amp;
+    var len2;
+    var t;
+    var u;
+    var d;
+
     switch (type) {
       case "circle":
+      case "blob":
+        p.push();
+        if (type === "blob") {
+          p.scale(1.08, 0.94);
+        }
         p.circle(0, 0, size);
+        p.pop();
         break;
       case "ring":
         p.noFill();
@@ -141,22 +162,69 @@ var VibeUtils = (function () {
         p.circle(0, 0, size);
         break;
       case "rect":
+      case "stripeBlock":
         p.rectMode(p.CENTER);
-        p.rect(0, 0, size, size * 0.6, size * 0.05);
+        if (type === "stripeBlock") {
+          p.rect(0, 0, size * 0.55, size * 0.38, size * 0.04);
+        } else {
+          p.rect(0, 0, size, size * 0.6, size * 0.05);
+        }
+        break;
+      case "longBar":
+        p.rectMode(p.CENTER);
+        p.rect(0, 0, size * 1.15, size * 0.11, size * 0.02);
+        break;
+      case "capsule":
+        p.rectMode(p.CENTER);
+        p.rect(0, 0, size * 0.38, size * 0.95, size * 0.2);
+        break;
+      case "pill":
+        p.rectMode(p.CENTER);
+        p.rect(0, 0, size * 0.95, size * 0.35, size * 0.18);
+        break;
+      case "pixelStair":
+        u = size * 0.12;
+        p.rectMode(p.CENTER);
+        p.rect(-u, u, u * 1.2, u);
+        p.rect(0, 0, u * 1.2, u);
+        p.rect(u, -u, u * 1.2, u);
         break;
       case "triangle":
-        var th = size * 0.866;
+        th = size * 0.866;
+        p.triangle(0, -th * 0.6, -size * 0.5, th * 0.4, size * 0.5, th * 0.4);
+        break;
+      case "smallTriangle":
+        s = size * 0.65;
+        th = s * 0.866;
+        p.triangle(0, -th * 0.6, -s * 0.5, th * 0.4, s * 0.5, th * 0.4);
+        break;
+      case "outlineTriangle":
+        p.noFill();
+        p.strokeWeight(size * 0.055);
+        th = size * 0.866;
         p.triangle(0, -th * 0.6, -size * 0.5, th * 0.4, size * 0.5, th * 0.4);
         break;
       case "star":
         drawStar(p, 0, 0, size * 0.25, size * 0.5, 5);
         break;
+      case "sunburst":
+        p.noFill();
+        p.strokeWeight(size * 0.04);
+        n = 10;
+        r = size * 0.48;
+        for (i = 0; i < n; i++) {
+          ang = (i / n) * p.TWO_PI;
+          p.line(0, 0, p.cos(ang) * r, p.sin(ang) * r);
+        }
+        break;
       case "diamond":
-        p.quad(0, -size * 0.5, size * 0.35, 0, 0, size * 0.5, -size * 0.35, 0);
+      case "smallDiamond":
+        s = type === "smallDiamond" ? size * 0.65 : size;
+        p.quad(0, -s * 0.5, s * 0.35, 0, 0, s * 0.5, -s * 0.35, 0);
         break;
       case "cross":
-        var arm = size * 0.15;
-        var len = size * 0.5;
+        arm = size * 0.15;
+        len = size * 0.5;
         p.rectMode(p.CENTER);
         p.rect(0, 0, arm, len);
         p.rect(0, 0, len, arm);
@@ -165,6 +233,49 @@ var VibeUtils = (function () {
         p.noFill();
         p.strokeWeight(size * 0.06);
         p.arc(0, 0, size, size, -p.PI * 0.6, p.PI * 0.6);
+        break;
+      case "dotArc":
+        p.noFill();
+        p.strokeWeight(size * 0.05);
+        p.arc(0, 0, size, size, -0.4 * p.PI, 0.9 * p.PI);
+        break;
+      case "arch":
+        p.noFill();
+        p.strokeWeight(size * 0.055);
+        p.arc(0, 0, size * 0.95, size * 0.55, p.PI * 1.05, p.PI * 1.95, p.OPEN);
+        break;
+      case "halfCircle":
+        p.arc(0, 0, size, size, 0, p.PI, p.PIE);
+        break;
+      case "orbitLine":
+        p.noFill();
+        p.strokeWeight(size * 0.05);
+        p.ellipse(0, 0, size, size * 0.72);
+        break;
+      case "squiggle":
+        p.noFill();
+        p.strokeWeight(size * 0.045);
+        p.beginShape();
+        steps = 24;
+        amp = size * 0.12;
+        len2 = size * 0.45;
+        for (i = 0; i <= steps; i++) {
+          t = (i / steps) * 2 - 1;
+          p.vertex(t * len2, p.sin(t * p.PI * 3) * amp);
+        }
+        p.endShape();
+        break;
+      case "smallDotGroup":
+        d = size * 0.1;
+        p.circle(-size * 0.15, 0, d);
+        p.circle(size * 0.15, 0, d);
+        p.circle(0, -size * 0.12, d * 0.85);
+        break;
+      case "dot":
+        p.circle(0, 0, size * 0.15);
+        break;
+      default:
+        p.circle(0, 0, size);
         break;
     }
   }
@@ -265,6 +376,85 @@ var VibeUtils = (function () {
     return base + (centroid || 0) * 40;
   }
 
+  function calcVoiceProfile(analysis) {
+    var bass = analysis.bass || 0;
+    var mid = analysis.mid || 0;
+    var treble = analysis.treble || 0;
+    var total = bass + mid + treble || 1;
+
+    var bassR = bass / total;
+    var midR = mid / total;
+    var trebleR = treble / total;
+
+    var centroid = analysis.centroid != null ? analysis.centroid : 0.5;
+    var spread = analysis.spread || 0;
+    var delta = analysis.delta || 0;
+    var vol = effectiveVolume(analysis.volume, analysis.isMic);
+
+    var pitchNorm = mapValue(
+      analysis.peakFreq || 220,
+      80,
+      3000,
+      0,
+      1
+    );
+
+    var roundness = clamp(
+      bassR * 0.45 + (1 - centroid) * 0.32 + (1 - pitchNorm) * 0.23,
+      0,
+      1
+    );
+
+    var sharpness = clamp(
+      trebleR * 0.35 + centroid * 0.35 + pitchNorm * 0.2 + delta * 0.1,
+      0,
+      1
+    );
+
+    var structure = clamp(
+      midR * 0.55 + (1 - spread) * 0.25 + vol * 0.2,
+      0,
+      1
+    );
+
+    var texture = clamp(
+      spread * 0.55 + delta * 0.3 + centroid * 0.15,
+      0,
+      1
+    );
+
+    var dominant = "round";
+    var maxVal = roundness;
+
+    if (sharpness > maxVal) {
+      dominant = "sharp";
+      maxVal = sharpness;
+    }
+
+    if (structure > maxVal) {
+      dominant = "structural";
+      maxVal = structure;
+    }
+
+    if (texture > maxVal) {
+      dominant = "textural";
+      maxVal = texture;
+    }
+
+    return {
+      roundness: roundness,
+      sharpness: sharpness,
+      structure: structure,
+      texture: texture,
+      dominant: dominant,
+      weight: bassR,
+      brightness: centroid,
+      activity: delta,
+      volume: vol,
+      pitch: pitchNorm,
+    };
+  }
+
   function getDrawPosition(p, el, time, vibrate) {
     var m = calcMotionOffset(p, el, time, vibrate);
     return { x: el.x + m.x, y: el.y + m.y };
@@ -307,6 +497,7 @@ var VibeUtils = (function () {
     calcMotionOffset: calcMotionOffset,
     calcTrailAlpha: calcTrailAlpha,
     calcGlow: calcGlow,
+    calcVoiceProfile: calcVoiceProfile,
     getDrawPosition: getDrawPosition,
     drawConnections: drawConnections,
     shapeLabel: shapeLabel,
