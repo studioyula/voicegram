@@ -40,6 +40,13 @@
     getMosaicRenderer: function () {
       return mosaicRenderer;
     },
+    /** Non-null only in mosaic mode — used to crop video to the mosaic poster area. */
+    getRecordingCropRect: function () {
+      if (this.getMode() !== "mosaic") return null;
+      var mr = this.getMosaicRenderer();
+      if (!mr || typeof mr.getViewportRect !== "function") return null;
+      return mr.getViewportRect();
+    },
     getCanvas: function () {
       if (this._canvasEl) return this._canvasEl;
       var host = document.getElementById("canvas-host");
@@ -79,6 +86,9 @@
       var renderer = window.VibeApp.getRenderer();
       renderer.update();
       renderer.render();
+      if (typeof VibeRecorder !== "undefined" && VibeRecorder.syncCropFrame) {
+        VibeRecorder.syncCropFrame();
+      }
       VibeUI.updateDebug();
       VibeUI.updateFileProgress();
     };

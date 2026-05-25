@@ -321,6 +321,15 @@ var VibeUI = (function () {
       getCanvas: function () {
         return window.VibeApp.getCanvas();
       },
+      getCropRect: function () {
+        if (
+          !window.VibeApp ||
+          typeof window.VibeApp.getRecordingCropRect !== "function"
+        ) {
+          return null;
+        }
+        return window.VibeApp.getRecordingCropRect();
+      },
       getAudioStream: getAudioStreamForRecording,
       onBegin: function () {
         setRecordUi(true);

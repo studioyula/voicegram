@@ -132,6 +132,19 @@ VibeRenderer.MosaicRenderer = (function () {
     this.lastAspectH = 0;
   };
 
+  /** Pixel rect of the mosaic grid on the canvas (for crop export / recording). */
+  MosaicRenderer.prototype.getViewportRect = function () {
+    this.ensureGrid();
+    if (!this.layout) return null;
+    var L = this.layout;
+    return {
+      x: L.offsetX,
+      y: L.offsetY,
+      w: L.boxW,
+      h: L.boxH,
+    };
+  };
+
   MosaicRenderer.prototype.initCells = function (cols, rows) {
     cols = cols || BASE_LONG;
     rows = rows || BASE_LONG;

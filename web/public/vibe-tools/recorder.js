@@ -11,6 +11,10 @@ var VibeRecorder = (function () {
   var chosenMime = "";
   var recording = false;
   var callbacks = null;
+  var cropCanvas = null;
+  var cropCtx = null;
+  var cropRectFrozen = null;
+  var cropGetCanvas = null;
 
   function extensionForMime(mt) {
     if (!mt) return "webm";
@@ -64,13 +68,64 @@ var VibeRecorder = (function () {
     return "";
   }
 
-  function buildStream(getCanvas, getAudioStream) {
+  function syncCropFrame() {
+    if (!cropCanvas || !cropCtx || !cropRectFrozen || !cropGetCanvas) {
+      return;
+    }
+    var main =
+      typeof cropGetCanvas === "function" ? cropGetCanvas() : cropGetCanvas;
+    if (!main || typeof main.getContext !== "function") return;
+    try {
+      cropCtx.drawImage(
+        main,
+        cropRectFrozen.x,
+        cropRectFrozen.y,
+        cropRectFrozen.w,
+        cropRectFrozen.h,
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+      );
+    } catch (e) {
+      /* ignore draw errors (e.g. tainted canvas) */
+    }
+  }
+
+  function buildStream(getCanvas, getAudioStream, getCropRect) {
+    cropCanvas = null;
+    cropCtx = null;
+    cropRectFrozen = null;
+    cropGetCanvas = getCanvas;
+
     var canvas = typeof getCanvas === "function" ? getCanvas() : getCanvas;
     if (!canvas || typeof canvas.captureStream !== "function") {
       return null;
     }
 
-    canvasCaptureStream = canvas.captureStream(30);
+    var streamSource = canvas;
+    if (getCropRect && typeof getCropRect === "function") {
+      var r = getCropRect();
+      if (r && isFinite(r.x) && isFinite(r.y) && r.w >= 1 && r.h >= 1) {
+        var sx = Math.max(0, Math.round(r.x));
+        var sy = Math.max(0, Math.round(r.y));
+        var sw = Math.max(1, Math.round(r.w));
+        var sh = Math.max(1, Math.round(r.h));
+        if (sx + sw > canvas.width) sw = Math.max(1, canvas.width - sx);
+        if (sy + sh > canvas.height) sh = Math.max(1, canvas.height - sy);
+        if (sw >= 1 && sh >= 1) {
+          cropCanvas = document.createElement("canvas");
+          cropCanvas.width = sw;
+          cropCanvas.height = sh;
+          cropCtx = cropCanvas.getContext("2d");
+          cropRectFrozen = { x: sx, y: sy, w: sw, h: sh };
+          syncCropFrame();
+          streamSource = cropCanvas;
+        }
+      }
+    }
+
+    canvasCaptureStream = streamSource.captureStream(30);
     if (!canvasCaptureStream) {
       return null;
     }
@@ -100,6 +155,10 @@ var VibeRecorder = (function () {
   }
 
   function stopCanvasVideoOnly() {
+    cropCanvas = null;
+    cropCtx = null;
+    cropRectFrozen = null;
+    cropGetCanvas = null;
     if (canvasCaptureStream) {
       canvasCaptureStream.getVideoTracks().forEach(function (t) {
         try {
@@ -133,7 +192,8 @@ var VibeRecorder = (function () {
 
     callbacks = { onEnd: onEnd, onError: onError };
 
-    var stream = buildStream(getCanvas, getAudioStream);
+    var getCropRect = opts && opts.getCropRect;
+    var stream = buildStream(getCanvas, getAudioStream, getCropRect);
     if (!stream) {
       fail("NO_CANVAS", "captureStream unavailable");
       return false;
@@ -259,5 +319,6 @@ var VibeRecorder = (function () {
     stop: stop,
     isRecording: isRecording,
     pickMimeType: pickMimeType,
+    syncCropFrame: syncCropFrame,
   };
 })();
