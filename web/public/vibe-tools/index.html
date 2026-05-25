@@ -147,22 +147,6 @@
         box-shadow: var(--shadow-lg);
       }
 
-      .info-close {
-        position: sticky;
-        top: 12px;
-        float: right;
-        z-index: 2;
-        width: 32px;
-        min-width: 32px;
-        height: 32px;
-        min-height: 32px;
-        margin: 12px 12px 0 0;
-        padding: 0;
-        border-radius: var(--radius-full);
-        font-size: 20px;
-        line-height: 1;
-      }
-
       .info-content {
         padding: 40px 40px 36px;
       }
@@ -243,6 +227,31 @@
         background: var(--fill-subtle);
         border-color: var(--border-strong);
         color: var(--ink);
+      }
+
+      /* After global `button` rules so padding/font-size are not overridden. */
+      .info-close {
+        position: sticky;
+        top: 12px;
+        float: right;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        max-height: 32px;
+        margin: 12px 12px 0 0;
+        padding: 0;
+        border-radius: var(--radius-full);
+        font-size: 20px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0;
       }
 
       .primary-btn,
