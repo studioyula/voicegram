@@ -33,6 +33,9 @@ var VibeUI = (function () {
     els.playPause = document.getElementById("btn-play-pause");
     els.progress = document.getElementById("progress-bar");
     els.debug = document.getElementById("debug-bands");
+    els.info = document.getElementById("btn-info");
+    els.infoModal = document.getElementById("info-modal");
+    els.infoClose = document.getElementById("btn-info-close");
 
     audio.onMicReady = function () {
       setMicLabel("마이크 준비됨");
@@ -79,6 +82,7 @@ var VibeUI = (function () {
     setupModeButtons();
     setupShapeBackgroundDots();
     setupCanvasAspectSelect();
+    setupInfoModal();
     setupDebugToggle();
 
     setSource("mic");
@@ -189,9 +193,44 @@ var VibeUI = (function () {
     }
   }
 
+  function openInfoModal() {
+    if (!els.infoModal) return;
+    els.infoModal.classList.remove("hidden");
+  }
+
+  function closeInfoModal() {
+    if (!els.infoModal) return;
+    els.infoModal.classList.add("hidden");
+  }
+
+  function setupInfoModal() {
+    if (els.info) {
+      els.info.onclick = openInfoModal;
+    }
+
+    if (els.infoClose) {
+      els.infoClose.onclick = closeInfoModal;
+    }
+
+    if (els.infoModal) {
+      els.infoModal.onclick = function (e) {
+        if (e.target && e.target.getAttribute("data-info-close") === "true") {
+          closeInfoModal();
+        }
+      };
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeInfoModal();
+      }
+    });
+  }
+
   function setupDebugToggle() {
     document.addEventListener("keydown", function (e) {
       if (e.key !== "d" && e.key !== "D") return;
+      if (els.infoModal && !els.infoModal.classList.contains("hidden")) return;
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) {
         return;
       }

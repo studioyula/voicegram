@@ -100,6 +100,135 @@
         letter-spacing: -0.03em;
       }
 
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+      }
+
+      .info-btn {
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .info-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: var(--space-6);
+      }
+
+      .info-modal.hidden {
+        display: none;
+      }
+
+      .info-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 17, 17, 0.28);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .info-panel {
+        position: relative;
+        z-index: 1;
+        width: min(560px, calc(100vw - 48px));
+        max-height: min(760px, calc(100vh - 48px));
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .info-close {
+        position: sticky;
+        top: 12px;
+        float: right;
+        z-index: 2;
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        margin: 12px 12px 0 0;
+        padding: 0;
+        border-radius: var(--radius-full);
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .info-content {
+        padding: 40px 40px 36px;
+      }
+
+      .info-kicker {
+        margin-bottom: 8px;
+        color: var(--ink-tertiary);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 650;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .info-content h2 {
+        margin-bottom: 16px;
+        color: var(--ink);
+        font-size: 28px;
+        font-weight: 680;
+        letter-spacing: -0.045em;
+        line-height: 1.08;
+      }
+
+      .info-lead {
+        margin-bottom: 28px;
+        color: var(--ink-secondary);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .info-block {
+        padding: 18px 0;
+        border-top: 1px solid var(--border);
+      }
+
+      .info-block h3 {
+        margin-bottom: 8px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .info-block p,
+      .info-block li {
+        color: var(--ink-secondary);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .info-block ul {
+        display: grid;
+        gap: 6px;
+        padding-left: 18px;
+      }
+
+      .info-note {
+        margin-top: 20px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        background: var(--fill-subtle);
+        color: var(--ink-tertiary);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
       button,
       input,
       select {
@@ -691,15 +820,39 @@
           right: var(--space-4);
           bottom: 300px;
         }
+
+        .info-modal {
+          padding: var(--space-3);
+        }
+
+        .info-panel {
+          width: calc(100vw - 24px);
+          max-height: calc(100vh - 24px);
+          border-radius: 18px;
+        }
+
+        .info-content {
+          padding: 34px 24px 28px;
+        }
+
+        .info-content h2 {
+          font-size: 24px;
+        }
       }
     </style>
   </head>
   <body>
     <div id="canvas-host"></div>
 
-    <header class="topbar" aria-label="Voicegram header">
+    <header class="topbar" aria-label="Voicegram controls">
       <div class="brand-logo">
         <span>VOICEGRAM</span>
+      </div>
+
+      <div class="top-actions">
+        <button id="btn-info" class="info-btn" type="button" aria-label="About Voicegram">
+          Info
+        </button>
       </div>
     </header>
 
@@ -805,7 +958,7 @@
             id="btn-record-video"
             class="output-btn"
             type="button"
-            title="캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
+            title="캔버스를 동영상으로 녹화합니다. MP4 또는 WebM"
             aria-pressed="false"
           >
             <span class="rec-dot" aria-hidden="true"></span>
@@ -820,6 +973,60 @@
 
     <div class="bottom-center">
       <p id="debug-bands" class="hidden"></p>
+    </div>
+
+    <div id="info-modal" class="info-modal hidden" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <div class="info-backdrop" data-info-close="true"></div>
+
+      <div class="info-panel">
+        <button id="btn-info-close" class="info-close" type="button" aria-label="Close information">
+          ×
+        </button>
+
+        <div class="info-content">
+          <p class="info-kicker">VOICEGRAM</p>
+          <h2 id="info-title">Your voice, translated into visual form.</h2>
+
+          <p class="info-lead">
+            VOICEGRAM은 마이크나 오디오 파일의 소리를 실시간으로 분석해,
+            목소리의 특징을 그래픽 형태와 패턴으로 변환하는 인터랙티브 비주얼 도구입니다.
+          </p>
+
+          <div class="info-block">
+            <h3>Shape Mode</h3>
+            <p>
+              목소리의 높낮이, 밝기, 에너지, 변화량을 분석해 다양한 그래픽 모티프를 생성합니다.
+              낮고 굵은 소리는 둥근 형태로, 높고 밝은 소리는 뾰족한 형태로,
+              변화가 큰 소리는 리듬감 있는 점과 선 요소로 표현됩니다.
+            </p>
+          </div>
+
+          <div class="info-block">
+            <h3>Mosaic Mode</h3>
+            <p>
+              목소리의 리듬과 밀도를 그리드 기반의 색면 패턴으로 변환합니다.
+              여러 도형을 만드는 모드가 아니라, 소리를 정제된 패턴 포스터처럼 번역하는 모드입니다.
+            </p>
+          </div>
+
+          <div class="info-block">
+            <h3>How to use</h3>
+            <ul>
+              <li><strong>MIC</strong>: 마이크 입력으로 실시간 그래픽을 생성합니다.</li>
+              <li><strong>FILE</strong>: 오디오 파일을 업로드해 그래픽을 생성합니다.</li>
+              <li><strong>Shape / Mosaic</strong>: 서로 다른 시각화 방식을 선택합니다.</li>
+              <li><strong>Background</strong>: Shape 모드의 배경을 white 또는 black으로 선택합니다.</li>
+              <li><strong>Canvas</strong>: 캡처할 화면 비율을 선택합니다.</li>
+              <li><strong>Capture / Record</strong>: 정지 이미지나 영상을 저장합니다.</li>
+            </ul>
+          </div>
+
+          <p class="info-note">
+            이 프로젝트는 sound symbolism, Bouba/Kiki effect, cross-modal correspondence에서 출발했습니다.
+            즉, 소리와 형태가 서로 자연스럽게 연결될 수 있다는 아이디어를 시각적으로 실험합니다.
+          </p>
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
