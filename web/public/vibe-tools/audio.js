@@ -6,7 +6,7 @@ var VibeAudio = (function () {
 
   function AudioManager(p) {
     this.p = p;
-    this.sourceMode = "file";
+    this.sourceMode = "mic";
     this.enabled = false;
     this.micReady = false;
     this.debugLog = false;

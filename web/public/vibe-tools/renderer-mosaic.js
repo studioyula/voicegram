@@ -6,6 +6,15 @@ var VibeRenderer = VibeRenderer || {};
  */
 VibeRenderer.MosaicRenderer = (function () {
   var BASE_LONG = 44;
+  /** ~BASE_LONG^2 cells; cols/rows ratio matches content aspect so each cell stays square in pixels. */
+  function mosaicGridColsRows(aw, ah) {
+    aw = aw > 0 ? aw : 1;
+    ah = ah > 0 ? ah : 1;
+    var ar = aw / ah;
+    var cols = Math.max(12, Math.round(BASE_LONG * Math.sqrt(ar)));
+    var rows = Math.max(12, Math.round(cols / ar));
+    return { cols: cols, rows: rows };
+  }
   var GAP_RATIO = 0.055;
   var BLUR_MIX = 0.14;
   var DISPLAY_LEVELS = 8;
@@ -123,8 +132,12 @@ VibeRenderer.MosaicRenderer = (function () {
     this.lastAspectH = 0;
   };
 
-  MosaicRenderer.prototype.initCells = function () {
-    var total = BASE_LONG * BASE_LONG;
+  MosaicRenderer.prototype.initCells = function (cols, rows) {
+    cols = cols || BASE_LONG;
+    rows = rows || BASE_LONG;
+    this._gridCols = cols;
+    this._gridRows = rows;
+    var total = cols * rows;
     var i;
     this.cells = [];
     this.prevCells = [];
@@ -145,29 +158,27 @@ VibeRenderer.MosaicRenderer = (function () {
     var ah = aspect.h;
     var maxW = canvasW * 0.85;
     var maxH = canvasH * 0.85;
-    var targetRatio = aw / ah;
-    var boxW;
-    var boxH;
-    if (maxW / maxH > targetRatio) {
-      boxH = maxH;
-      boxW = boxH * targetRatio;
-    } else {
-      boxW = maxW;
-      boxH = boxW / targetRatio;
-    }
-    var cellW = boxW / BASE_LONG;
-    var cellH = boxH / BASE_LONG;
-    var gapW = Math.max(1, cellW * GAP_RATIO);
-    var gapH = Math.max(1, cellH * GAP_RATIO);
+    var dims = mosaicGridColsRows(aw, ah);
+    var cols = dims.cols;
+    var rows = dims.rows;
+    var cellByW = maxW / cols;
+    var cellByH = maxH / rows;
+    var cell = Math.min(cellByW, cellByH);
+    var boxW = cell * cols;
+    var boxH = cell * rows;
+    var gap = Math.max(1, cell * GAP_RATIO);
     return {
+      cols: cols,
+      rows: rows,
+      cellCount: cols * rows,
       boxW: boxW,
       boxH: boxH,
-      cellW: cellW,
-      cellH: cellH,
-      gapW: gapW,
-      gapH: gapH,
-      cellDrawW: cellW - gapW,
-      cellDrawH: cellH - gapH,
+      cellW: cell,
+      cellH: cell,
+      gapW: gap,
+      gapH: gap,
+      cellDrawW: cell - gap,
+      cellDrawH: cell - gap,
       offsetX: (canvasW - boxW) / 2,
       offsetY: (canvasH - boxH) / 2,
     };
@@ -183,6 +194,12 @@ VibeRenderer.MosaicRenderer = (function () {
       !this.layout
     ) {
       this.layout = this.calcLayout();
+      if (
+        !this.cells.length ||
+        this.cells.length !== this.layout.cellCount
+      ) {
+        this.initCells(this.layout.cols, this.layout.rows);
+      }
       this.lastW = this.p.width;
       this.lastH = this.p.height;
       this.lastAspectW = aspect.w;
@@ -191,14 +208,16 @@ VibeRenderer.MosaicRenderer = (function () {
   };
 
   MosaicRenderer.prototype.clear = function () {
-    this.initCells();
+    this.initCells(this._gridCols || BASE_LONG, this._gridRows || BASE_LONG);
     this.p.background(0, 0, 98);
   };
 
   MosaicRenderer.prototype.calcFocalPoint = function (analysis) {
+    var cols = (this.layout && this.layout.cols) || BASE_LONG;
+    var rows = (this.layout && this.layout.rows) || BASE_LONG;
     return {
-      x: (BASE_LONG - 1) / 2,
-      y: (BASE_LONG - 1) / 2,
+      x: (cols - 1) / 2,
+      y: (rows - 1) / 2,
     };
   };
 
@@ -286,11 +305,19 @@ VibeRenderer.MosaicRenderer = (function () {
     return patterns[name] != null ? patterns[name] : 0;
   };
 
-  MosaicRenderer.prototype.calcCellEnergy = function (col, row, focal, analysis) {
+  MosaicRenderer.prototype.calcCellEnergy = function (
+    col,
+    row,
+    focal,
+    analysis,
+    cols,
+    rows
+  ) {
+    var ref = Math.max(cols, rows);
     var dx = col - focal.x;
     var dy = row - focal.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
-    var maxDist = BASE_LONG * 0.5;
+    var maxDist = ref * 0.5;
     var normDist = dist / maxDist;
 
     var bass = analysis.bass || 0;
@@ -314,7 +341,7 @@ VibeRenderer.MosaicRenderer = (function () {
     radial = Math.pow(radial, 0.85);
     radial = Math.round(radial * DISPLAY_LEVELS) / DISPLAY_LEVELS;
 
-    var manhattan = (Math.abs(dx) + Math.abs(dy)) / (BASE_LONG * 0.54);
+    var manhattan = (Math.abs(dx) + Math.abs(dy)) / (ref * 0.54);
     var diamond = Math.max(0, 1 - manhattan);
     diamond = Math.round(diamond * DISPLAY_LEVELS) / DISPLAY_LEVELS;
 
@@ -323,50 +350,52 @@ VibeRenderer.MosaicRenderer = (function () {
     var concentricSquare =
       Math.pow(
         Math.abs(
-          Math.sin((chebyshev * Math.PI) / (BASE_LONG / squareRingFreq))
+          Math.sin((chebyshev * Math.PI) / (ref / squareRingFreq))
         ),
         1.4
-      ) * Math.max(0, 1 - (chebyshev / (BASE_LONG * 0.58)) * 0.75);
+      ) * Math.max(0, 1 - (chebyshev / (ref * 0.58)) * 0.75);
     concentricSquare =
       Math.round(concentricSquare * DISPLAY_LEVELS) / DISPLAY_LEVELS;
 
-    var rows = BASE_LONG;
-    var cols = BASE_LONG;
+    var gridRows = rows;
+    var gridCols = cols;
     var maxDistCorner =
       Math.sqrt(
-        Math.pow((cols - 1) / 2, 2) + Math.pow((rows - 1) / 2, 2)
+        Math.pow((gridCols - 1) / 2, 2) + Math.pow((gridRows - 1) / 2, 2)
       ) || 1;
 
     var hBand =
-      Math.max(0, 1 - Math.abs(dy) / (rows * 0.18)) *
-      Math.max(0, 1 - Math.abs(dx) / (cols * 0.78));
+      Math.max(0, 1 - Math.abs(dy) / (gridRows * 0.18)) *
+      Math.max(0, 1 - Math.abs(dx) / (gridCols * 0.78));
     hBand = Math.round(hBand * 8) / 8;
 
     var vBand =
-      Math.max(0, 1 - Math.abs(dx) / (cols * 0.14)) *
-      Math.max(0, 1 - Math.abs(dy) / (rows * 0.78));
+      Math.max(0, 1 - Math.abs(dx) / (gridCols * 0.14)) *
+      Math.max(0, 1 - Math.abs(dy) / (gridRows * 0.78));
     vBand = Math.round(vBand * 8) / 8;
 
     var cross = Math.max(hBand, vBand);
     cross = Math.round(cross * 8) / 8;
 
     var wideHBand =
-      Math.max(0, 1 - Math.abs(dy) / (rows * 0.32)) *
-      Math.max(0, 1 - Math.abs(dx) / (cols * 0.86));
+      Math.max(0, 1 - Math.abs(dy) / (gridRows * 0.32)) *
+      Math.max(0, 1 - Math.abs(dx) / (gridCols * 0.86));
     wideHBand = Math.round(wideHBand * 8) / 8;
 
     var wideVBand =
-      Math.max(0, 1 - Math.abs(dx) / (cols * 0.24)) *
-      Math.max(0, 1 - Math.abs(dy) / (rows * 0.82));
+      Math.max(0, 1 - Math.abs(dx) / (gridCols * 0.24)) *
+      Math.max(0, 1 - Math.abs(dy) / (gridRows * 0.82));
     wideVBand = Math.round(wideVBand * 8) / 8;
 
     var softCross = cross * 0.65 + radial * 0.22;
     softCross = Math.round(softCross * 8) / 8;
 
     var offsetXF =
-      focal.x + VibeUtils.mapValue(centroid, 0, 1, -cols * 0.12, cols * 0.12);
+      focal.x +
+      VibeUtils.mapValue(centroid, 0, 1, -gridCols * 0.12, gridCols * 0.12);
     var offsetYF =
-      focal.y + VibeUtils.mapValue(spread, 0, 1, rows * 0.08, -rows * 0.08);
+      focal.y +
+      VibeUtils.mapValue(spread, 0, 1, gridRows * 0.08, -gridRows * 0.08);
     var odx = col - offsetXF;
     var ody = row - offsetYF;
     var odist = Math.sqrt(odx * odx + ody * ody);
@@ -374,8 +403,8 @@ VibeRenderer.MosaicRenderer = (function () {
     offsetField = Math.pow(offsetField, 0.9);
     offsetField = Math.round(offsetField * 8) / 8;
 
-    var cornerX = centroid > 0.55 ? cols * 0.68 : cols * 0.32;
-    var cornerY = spread > 0.55 ? rows * 0.34 : rows * 0.66;
+    var cornerX = centroid > 0.55 ? gridCols * 0.68 : gridCols * 0.32;
+    var cornerY = spread > 0.55 ? gridRows * 0.34 : gridRows * 0.66;
     var cdx = col - cornerX;
     var cdy = row - cornerY;
     var cdist = Math.sqrt(cdx * cdx + cdy * cdy);
@@ -384,40 +413,49 @@ VibeRenderer.MosaicRenderer = (function () {
     cornerField = Math.round(cornerField * 8) / 8;
 
     var leftField =
-      Math.max(0, 1 - Math.abs(col - cols * 0.32) / (cols * 0.28)) * radial;
+      Math.max(0, 1 - Math.abs(col - gridCols * 0.32) / (gridCols * 0.28)) *
+      radial;
     leftField = Math.round(leftField * 8) / 8;
 
     var rightField =
-      Math.max(0, 1 - Math.abs(col - cols * 0.68) / (cols * 0.28)) * radial;
+      Math.max(0, 1 - Math.abs(col - gridCols * 0.68) / (gridCols * 0.28)) *
+      radial;
     rightField = Math.round(rightField * 8) / 8;
 
     var upperField =
-      Math.max(0, 1 - Math.abs(row - rows * 0.34) / (rows * 0.26)) * radial;
+      Math.max(0, 1 - Math.abs(row - gridRows * 0.34) / (gridRows * 0.26)) *
+      radial;
     upperField = Math.round(upperField * 8) / 8;
 
     var lowerField =
-      Math.max(0, 1 - Math.abs(row - rows * 0.66) / (rows * 0.26)) * radial;
+      Math.max(0, 1 - Math.abs(row - gridRows * 0.66) / (gridRows * 0.26)) *
+      radial;
     lowerField = Math.round(lowerField * 8) / 8;
 
     var doubleBand =
       Math.max(
-        Math.max(0, 1 - Math.abs(row - rows * 0.36) / (rows * 0.08)),
-        Math.max(0, 1 - Math.abs(row - rows * 0.64) / (rows * 0.08))
-      ) * Math.max(0, 1 - Math.abs(dx) / (cols * 0.78));
+        Math.max(0, 1 - Math.abs(row - gridRows * 0.36) / (gridRows * 0.08)),
+        Math.max(0, 1 - Math.abs(row - gridRows * 0.64) / (gridRows * 0.08))
+      ) * Math.max(0, 1 - Math.abs(dx) / (gridCols * 0.78));
     doubleBand = Math.round(doubleBand * 8) / 8;
 
-    var frameDist = Math.min(col, row, cols - 1 - col, rows - 1 - row);
+    var frameDist = Math.min(
+      col,
+      row,
+      gridCols - 1 - col,
+      gridRows - 1 - row
+    );
     var frameField = Math.max(
       0,
-      1 - frameDist / (Math.min(cols, rows) * 0.22)
+      1 - frameDist / (Math.min(gridCols, gridRows) * 0.22)
     );
     frameField = Math.round(frameField * 8) / 8;
 
     var gMax = Math.max(
       focal.x,
       focal.y,
-      cols - 1 - focal.x,
-      rows - 1 - focal.y
+      gridCols - 1 - focal.x,
+      gridRows - 1 - focal.y
     );
     var innerSquare = Math.max(0, 1 - chebyshev / (gMax * 0.24 + 0.001));
     innerSquare = Math.round(innerSquare * 8) / 8;
@@ -484,6 +522,9 @@ VibeRenderer.MosaicRenderer = (function () {
   };
 
   MosaicRenderer.prototype.blurCells = function (cells) {
+    var layout = this.layout;
+    var gcols = layout.cols;
+    var grows = layout.rows;
     var blurred = new Array(cells.length);
     var kernel = [1, 2, 1, 2, 4, 2, 1, 2, 1];
     var r;
@@ -496,22 +537,22 @@ VibeRenderer.MosaicRenderer = (function () {
     var count;
     var w;
 
-    for (r = 0; r < BASE_LONG; r++) {
-      for (c = 0; c < BASE_LONG; c++) {
+    for (r = 0; r < grows; r++) {
+      for (c = 0; c < gcols; c++) {
         sum = 0;
         count = 0;
         for (dr = -1; dr <= 1; dr++) {
           for (dc = -1; dc <= 1; dc++) {
             nr = r + dr;
             nc = c + dc;
-            if (nr >= 0 && nr < BASE_LONG && nc >= 0 && nc < BASE_LONG) {
+            if (nr >= 0 && nr < grows && nc >= 0 && nc < gcols) {
               w = kernel[(dr + 1) * 3 + (dc + 1)];
-              sum += cells[nr * BASE_LONG + nc] * w;
+              sum += cells[nr * gcols + nc] * w;
               count += w;
             }
           }
         }
-        blurred[r * BASE_LONG + c] = count > 0 ? sum / count : 0;
+        blurred[r * gcols + c] = count > 0 ? sum / count : 0;
       }
     }
 
@@ -520,8 +561,11 @@ VibeRenderer.MosaicRenderer = (function () {
 
   MosaicRenderer.prototype.update = function () {
     this.ensureGrid();
+    var layout = this.layout;
+    var gcols = layout.cols;
+    var grows = layout.rows;
     var analysis = this.audio.lastAnalysis || {};
-    var total = BASE_LONG * BASE_LONG;
+    var total = gcols * grows;
     var i;
     var row;
     var col;
@@ -532,10 +576,17 @@ VibeRenderer.MosaicRenderer = (function () {
     this._mosaicPattern = this.pickStablePattern(analysis);
 
     focal = this.calcFocalPoint(analysis);
-    for (row = 0; row < BASE_LONG; row++) {
-      for (col = 0; col < BASE_LONG; col++) {
-        i = row * BASE_LONG + col;
-        newEnergy = this.calcCellEnergy(col, row, focal, analysis);
+    for (row = 0; row < grows; row++) {
+      for (col = 0; col < gcols; col++) {
+        i = row * gcols + col;
+        newEnergy = this.calcCellEnergy(
+          col,
+          row,
+          focal,
+          analysis,
+          gcols,
+          grows
+        );
         if (!active) {
           this.cells[i] =
             this.cells[i] * SILENT_RETAIN + newEnergy * SILENT_PULL;
@@ -559,10 +610,12 @@ VibeRenderer.MosaicRenderer = (function () {
     this.ensureGrid();
     var p = this.p;
     var layout = this.layout;
+    var gcols = layout.cols;
+    var grows = layout.rows;
     var analysis = this.audio.lastAnalysis || {};
     var silentView = !this.audio.enabled || !analysis.isSound;
     var focal = this.calcFocalPoint(analysis);
-    var grid = { cols: BASE_LONG, rows: BASE_LONG };
+    var grid = { cols: gcols, rows: grows };
     var pattern = this._mosaicPattern || { main: "radial", sub: "concentricSquare" };
     var row;
     var col;
@@ -573,8 +626,6 @@ VibeRenderer.MosaicRenderer = (function () {
     var grain;
     var grainOffset;
     var ink;
-    var rows;
-    var cols;
     var dx0;
     var dy0;
     var dist0;
@@ -589,10 +640,8 @@ VibeRenderer.MosaicRenderer = (function () {
     if (silentView) {
       /* Solid light-gray tiles; white shows in GAP_RATIO gutters so squares read clearly */
       p.background(0, 0, 100);
-      rows = BASE_LONG;
-      cols = BASE_LONG;
-      for (row = 0; row < rows; row++) {
-        for (col = 0; col < cols; col++) {
+      for (row = 0; row < grows; row++) {
+        for (col = 0; col < gcols; col++) {
           x = layout.offsetX + col * layout.cellW + layout.gapW / 2;
           y = layout.offsetY + row * layout.cellH + layout.gapH / 2;
 
@@ -601,7 +650,7 @@ VibeRenderer.MosaicRenderer = (function () {
           dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
           maxDist0 =
             Math.sqrt(
-              Math.pow((cols - 1) / 2, 2) + Math.pow((rows - 1) / 2, 2)
+              Math.pow((gcols - 1) / 2, 2) + Math.pow((grows - 1) / 2, 2)
             ) || 1;
           norm0 = dist0 / maxDist0;
           soft0 = Math.max(0, 1 - norm0);
@@ -617,9 +666,9 @@ VibeRenderer.MosaicRenderer = (function () {
 
     p.background(0, 0, 100);
 
-    for (row = 0; row < BASE_LONG; row++) {
-      for (col = 0; col < BASE_LONG; col++) {
-        idx = row * BASE_LONG + col;
+    for (row = 0; row < grows; row++) {
+      for (col = 0; col < gcols; col++) {
+        idx = row * gcols + col;
         e = this.displayCells[idx];
         if (e < 0.015) continue;
 

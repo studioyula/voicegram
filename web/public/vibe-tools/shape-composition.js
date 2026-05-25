@@ -434,12 +434,14 @@ var VibeShapeComposition = (function () {
     var typ = pickMotifTypeFromVoice(profile, tier, p);
 
     var role = colorRoleForTier(tier, profile.dominant);
+    var secMid = tier === "mid" && p.random() < 0.25;
     var col = VibePalettes.calcShapeCompositionColor(
       famId,
       role,
       analysis.centroid,
       analysis.peakFreq,
-      profile.dominant
+      profile.dominant,
+      { secondaryMid: secMid }
     );
 
     var sz = baseSizeForTier(tier, volQ01, w, h);
@@ -511,6 +513,10 @@ var VibeShapeComposition = (function () {
       prevVolRaw: 0,
       sessionStartMs: 0,
       pieceId: 0,
+      seeded: false,
+      paletteSessionMs: 0,
+      paletteId: "freshCoral",
+      accentPaletteId: "chooseCheer",
     };
   }
 
@@ -520,6 +526,10 @@ var VibeShapeComposition = (function () {
     state.prevVolRaw = 0;
     state.sessionStartMs = p ? p.millis() : 0;
     state.pieceId = 0;
+    state.seeded = false;
+    state.paletteSessionMs = 0;
+    state.paletteId = "freshCoral";
+    state.accentPaletteId = "chooseCheer";
   }
 
   function detectVoiceEvent(state, analysis, p) {
@@ -554,35 +564,74 @@ var VibeShapeComposition = (function () {
   }
 
   function onVoiceEvent(state, analysis, p, w, h) {
+    var now = p.millis();
     var profile = calcVoiceProfile(analysis);
-    var famId = VibePalettes.getShapeFamilyForProfile
-      ? VibePalettes.getShapeFamilyForProfile(profile)
-      : "brightPoster";
+    var paletteGap =
+      state.paletteSessionMs > 0 ? now - state.paletteSessionMs : 99999;
+    var needNewPaletteFamily =
+      !state.paletteId || state.paletteSessionMs === 0 || paletteGap > 2200;
+
+    if (needNewPaletteFamily) {
+      state.paletteId = VibePalettes.getShapePaletteIdForProfile
+        ? VibePalettes.getShapePaletteIdForProfile(profile)
+        : "freshCoral";
+
+      state.accentPaletteId = VibePalettes.getShapeAccentPaletteId
+        ? VibePalettes.getShapeAccentPaletteId(profile)
+        : state.paletteId;
+
+      state.paletteSessionMs = now;
+      state.seeded = true;
+    }
 
     var slots = slotsForTemplate(getTemplateId(state, p));
 
     if (p.random() < 0.45) {
       var mainSlot = findFreeSlot(slots, state.pieces, "main", p);
       if (mainSlot) {
-        spawnPiece(state, analysis, p, w, h, mainSlot, famId, profile);
+        spawnPiece(
+          state,
+          analysis,
+          p,
+          w,
+          h,
+          mainSlot,
+          state.paletteId,
+          profile
+        );
       }
     }
 
     if (p.random() < 0.85) {
       var md = findFreeSlot(slots, state.pieces, "mid", p);
-      if (md) spawnPiece(state, analysis, p, w, h, md, famId, profile);
+      if (md) {
+        spawnPiece(state, analysis, p, w, h, md, state.paletteId, profile);
+      }
     }
 
     var acCount = 1 + Math.floor(p.random(0, 3));
     var ai;
     for (ai = 0; ai < acCount; ai++) {
       var ac = findFreeSlot(slots, state.pieces, "accent", p);
-      if (ac) spawnPiece(state, analysis, p, w, h, ac, famId, profile);
+      if (ac) {
+        spawnPiece(
+          state,
+          analysis,
+          p,
+          w,
+          h,
+          ac,
+          state.accentPaletteId,
+          profile
+        );
+      }
     }
 
     if (p.random() < 0.35) {
       var ln = findFreeSlot(slots, state.pieces, "line", p);
-      if (ln) spawnPiece(state, analysis, p, w, h, ln, famId, profile);
+      if (ln) {
+        spawnPiece(state, analysis, p, w, h, ln, state.paletteId, profile);
+      }
     }
 
     state.lastEventMs = p.millis();

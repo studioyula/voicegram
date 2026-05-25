@@ -461,6 +461,10 @@
         display: none;
       }
 
+      .canvas-section.hidden {
+        display: none;
+      }
+
       .file-row {
         display: flex;
         align-items: center;
@@ -707,13 +711,13 @@
         <div class="source-controls">
           <div class="panel-source">
             <div class="source-tabs">
-              <button id="btn-source-mic" class="tab-btn" type="button" data-source="mic">MIC</button>
-              <button id="btn-source-file" class="tab-btn active" type="button" data-source="file">FILE</button>
+              <button id="btn-source-mic" class="tab-btn active" type="button" data-source="mic">MIC</button>
+              <button id="btn-source-file" class="tab-btn" type="button" data-source="file">FILE</button>
             </div>
           </div>
 
           <div class="input-area">
-            <div id="file-controls" class="sub-controls">
+            <div id="file-controls" class="sub-controls hidden">
               <div class="file-row">
                 <label class="file-select-button" for="file-input">파일 선택</label>
                 <span id="file-label" class="file-status-text">파일을 선택한 뒤 PLAY를 누르세요</span>
@@ -725,7 +729,7 @@
               </div>
             </div>
 
-            <div id="mic-controls" class="sub-controls hidden">
+            <div id="mic-controls" class="sub-controls">
               <select id="mic-device"></select>
               <div id="analysis-control" class="analysis-control">
                 <span class="analysis-label">소리 입력</span>
@@ -743,8 +747,8 @@
         </div>
         <div class="visual-controls">
           <div class="mode-selector">
-            <button class="mode-btn" type="button" data-mode="shape">SHAPE</button>
             <button class="mode-btn active" type="button" data-mode="mosaic">MOSAIC</button>
+            <button class="mode-btn" type="button" data-mode="shape">SHAPE</button>
           </div>
 
           <div class="palette-row" id="shape-bg-row">

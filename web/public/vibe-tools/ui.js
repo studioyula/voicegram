@@ -81,7 +81,7 @@ var VibeUI = (function () {
     setupCanvasAspectSelect();
     setupDebugToggle();
 
-    setSource("file");
+    setSource("mic");
     updateToggleLabel();
   }
 
@@ -179,6 +179,10 @@ var VibeUI = (function () {
     var row = document.getElementById("shape-bg-row");
     if (row) {
       row.style.display = isMosaic ? "none" : "flex";
+    }
+    var canvasSection = document.querySelector(".canvas-section");
+    if (canvasSection) {
+      canvasSection.classList.toggle("hidden", !isMosaic);
     }
     if (!isMosaic) {
       syncShapeBackgroundDots();

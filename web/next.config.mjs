@@ -8,6 +8,23 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  /**
+   * VOICEGRAM static files under /vibe-tools/ — avoid long-lived CDN/browser cache
+   * so https://…vercel.app/vibe-tools/index.html picks up new JS after each deploy.
+   */
+  async headers() {
+    return [
+      {
+        source: "/vibe-tools/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

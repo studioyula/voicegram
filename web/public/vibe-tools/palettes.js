@@ -235,69 +235,134 @@ var VibePalettes = (function () {
     },
   };
 
+  /** Shape final HEX families — one family per session; roles map to fixed slots. */
+  var shapeFinalPalettes = {
+    airyBlue: {
+      name: "Airy Blue",
+      colors: ["#94d9fc", "#8fd6fc", "#84d3fc", "#a5e0fc"],
+      accent: "#44bbf5",
+      lineLight: "#ffffff",
+      lineDark: "#4c7de0",
+    },
+    freshCoral: {
+      name: "Fresh Coral",
+      colors: ["#fcab90", "#fd8cac", "#fc7e8a", "#fda95a"],
+      accent: "#fb6663",
+      lineLight: "#ffffff",
+      lineDark: "#c87661",
+    },
+    lavenderPear: {
+      name: "Lavender Pear",
+      colors: ["#f8c59e", "#dcb7fc", "#f1ad9e", "#f7ccc0"],
+      accent: "#c8b1fb",
+      lineLight: "#ffffff",
+      lineDark: "#d8aec4",
+    },
+    skyLemon: {
+      name: "Sky Lemon",
+      colors: ["#8ebef6", "#7fbdf6", "#ddce73", "#7bc1ad"],
+      accent: "#44bbf5",
+      lineLight: "#ffffff",
+      lineDark: "#58b6d7",
+    },
+    chooseCheer: {
+      name: "Choose Cheer",
+      colors: ["#fe9e8b", "#fda0a6", "#fdcc7f", "#fcd3ab"],
+      accent: "#fd7972",
+      lineLight: "#ffffff",
+      lineDark: "#fa8886",
+    },
+    pinkPurple: {
+      name: "Pink Purple",
+      colors: ["#fba1a7", "#d8aec4", "#ac51fb", "#d76ed3"],
+      accent: "#ce3364",
+      lineLight: "#ffffff",
+      lineDark: "#cab5f0",
+    },
+    cleanTeal: {
+      name: "Clean Teal",
+      colors: ["#a3dff9", "#58b6d7", "#88d3d7", "#9ab4df"],
+      accent: "#94a7f7",
+      lineLight: "#ffffff",
+      lineDark: "#4c7de0",
+    },
+  };
+
+  function getShapePaletteIdForProfile(profile) {
+    if (!profile) return "freshCoral";
+    if (profile.dominant === "round") return "freshCoral";
+    if (profile.dominant === "sharp") return "pinkPurple";
+    if (profile.dominant === "structural") return "airyBlue";
+    if (profile.dominant === "textural") return "skyLemon";
+    return "chooseCheer";
+  }
+
+  function getShapeAccentPaletteId(profile) {
+    if (!profile) return "chooseCheer";
+    if (profile.dominant === "round") return "lavenderPear";
+    if (profile.dominant === "sharp") return "pinkPurple";
+    if (profile.dominant === "structural") return "cleanTeal";
+    if (profile.dominant === "textural") return "skyLemon";
+    return "chooseCheer";
+  }
+
   function getShapeFamilyForProfile(profile) {
     if (!profile) return "brightPoster";
     if (profile.dominant === "structural") return "structGrid";
     return "brightPoster";
   }
 
-  function calcShapeCompositionColor(famId, role, centroid, peakFreq, voiceProfile) {
-    var canvas = getShapeBackground();
-    var canvasId = canvas.id || "white";
-    var bgB = canvas.bg ? canvas.bg[2] : 100;
-
-    var profile = voiceProfile || "structural";
-    var palSet = shapeCuratedPalettes[canvasId] || shapeCuratedPalettes.white;
-    var pal = palSet[profile] || palSet.structural;
-
-    var key = "mid";
+  function calcShapeCompositionColor(famId, role, centroid, peakFreq, voiceProfile, opts) {
+    var palette = shapeFinalPalettes[famId] || shapeFinalPalettes.freshCoral;
+    var bg = getShapeBackground();
+    var isLightBg = (bg.bg ? bg.bg[2] : 100) > 50;
+    var hex;
+    var hsb;
+    var c;
+    var s;
+    var b;
 
     if (role === "line") {
-      key = "line";
+      hex = isLightBg ? palette.lineDark : palette.lineLight;
     } else if (role === "accent" || role === "treble") {
-      key = "accent";
-    } else if (role === "bass") {
-      key = "main";
+      hex = palette.accent;
+    } else if (role === "bass" || role === "main") {
+      hex = palette.colors[0];
+    } else if (role === "mid") {
+      hex =
+        opts && opts.secondaryMid && palette.colors[2]
+          ? palette.colors[2]
+          : palette.colors[1];
     } else {
-      key = "mid";
+      hex = palette.colors[2] || palette.colors[0];
     }
 
-    var base = pal[key] || pal.mid;
+    hsb = hexToHsb(hex);
+    c = centroid != null ? centroid : 0.5;
 
-    if (key === "line") {
-      return {
-        h: base.h,
-        s: base.s,
-        b: base.b,
-      };
-    }
-
-    var c = centroid != null ? centroid : 0.5;
-
-    var s = VibeUtils.clamp(
-      base.s * VibeUtils.mapValue(c, 0, 1, 0.96, 1.06),
+    s = VibeUtils.clamp(
+      hsb.s * VibeUtils.mapValue(c, 0, 1, 0.97, 1.04),
       0,
       100
     );
 
-    var b = VibeUtils.clamp(
-      base.b * VibeUtils.mapValue(c, 0, 1, 0.94, 1.04),
+    b = VibeUtils.clamp(
+      hsb.b * VibeUtils.mapValue(c, 0, 1, 0.96, 1.03),
       0,
       100
     );
 
-    var h = base.h;
-
-    var hueShift = VibeUtils.mapValue(peakFreq || 400, 80, 7000, -5, 5);
-    h = (h + hueShift + 360) % 360;
-
-    if (bgB > 50) {
+    if (isLightBg) {
       b = VibeUtils.clamp(b * 0.96, 0, 100);
     } else {
       b = VibeUtils.clamp(b * 1.04, 0, 100);
     }
 
-    return { h: h, s: s, b: b };
+    return {
+      h: hsb.h,
+      s: s,
+      b: b,
+    };
   }
 
   function calcShapeCompositionColorLegacy(famId, role, centroid, peakFreq, bgB) {
@@ -385,34 +450,64 @@ var VibePalettes = (function () {
     return null;
   }
 
-  function hexToHsb(hex) {
-    var r = parseInt(hex.slice(1, 3), 16) / 255;
-    var g = parseInt(hex.slice(3, 5), 16) / 255;
-    var b = parseInt(hex.slice(5, 7), 16) / 255;
+  function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) {
+      hex = hex
+        .split("")
+        .map(function (c) {
+          return c + c;
+        })
+        .join("");
+    }
+
+    var num = parseInt(hex, 16);
+
+    return {
+      r: (num >> 16) & 255,
+      g: (num >> 8) & 255,
+      b: num & 255,
+    };
+  }
+
+  function rgbToHsb(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
     var max = Math.max(r, g, b);
     var min = Math.min(r, g, b);
-    var diff = max - min;
+    var d = max - min;
     var h = 0;
-    var s = max === 0 ? 0 : (diff / max) * 100;
-    var bri = max * 100;
+    var s = max === 0 ? 0 : d / max;
+    var v = max;
 
-    if (diff !== 0) {
+    if (d !== 0) {
       if (max === r) {
-        h = 60 * (((g - b) / diff) % 6);
+        h = ((g - b) / d) % 6;
       } else if (max === g) {
-        h = 60 * (((b - r) / diff) + 2);
+        h = (b - r) / d + 2;
       } else {
-        h = 60 * (((r - g) / diff) + 4);
+        h = (r - g) / d + 4;
       }
-    }
-    if (h < 0) {
-      h += 360;
+      h *= 60;
+      if (h < 0) h += 360;
     }
 
     return {
-      h: Math.round(h),
-      s: Math.round(s),
-      b: Math.round(bri),
+      h: h,
+      s: s * 100,
+      b: v * 100,
+    };
+  }
+
+  function hexToHsb(hex) {
+    var rgb = hexToRgb(hex);
+    var x = rgbToHsb(rgb.r, rgb.g, rgb.b);
+    return {
+      h: Math.round(x.h),
+      s: Math.round(x.s),
+      b: Math.round(x.b),
     };
   }
 
@@ -679,6 +774,10 @@ var VibePalettes = (function () {
     getShapeBackgroundIds: getShapeBackgroundIds,
     setShapeBackground: setShapeBackground,
     getShapeFamilyForProfile: getShapeFamilyForProfile,
+    getShapePaletteIdForProfile: getShapePaletteIdForProfile,
+    getShapeAccentPaletteId: getShapeAccentPaletteId,
+    shapeFinalPalettes: shapeFinalPalettes,
+    hexToHsb: hexToHsb,
     calcShapeCompositionColor: calcShapeCompositionColor,
     setActive: setActive,
     calcColor: calcColor,
