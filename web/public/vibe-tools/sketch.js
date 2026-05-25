@@ -40,12 +40,27 @@
     getMosaicRenderer: function () {
       return mosaicRenderer;
     },
-    /** Non-null only in mosaic mode — used to crop video to the mosaic poster area. */
+    /** Non-null only in mosaic mode — used to crop video to the mosaic poster area (bitmap px). */
     getRecordingCropRect: function () {
       if (this.getMode() !== "mosaic") return null;
       var mr = this.getMosaicRenderer();
       if (!mr || typeof mr.getViewportRect !== "function") return null;
-      return mr.getViewportRect();
+      var r = mr.getViewportRect();
+      if (!r) return null;
+      var el = this.getCanvas();
+      if (!el) return r;
+      var lw = this._canvasLogicalW;
+      var lh = this._canvasLogicalH;
+      if (!lw || !lh || lw <= 0 || lh <= 0) return r;
+      if (el.width === lw && el.height === lh) return r;
+      var sx = el.width / lw;
+      var sy = el.height / lh;
+      return {
+        x: r.x * sx,
+        y: r.y * sy,
+        w: r.w * sx,
+        h: r.h * sy,
+      };
     },
     getCanvas: function () {
       if (this._canvasEl) return this._canvasEl;
@@ -68,6 +83,8 @@
       var c = p.createCanvas(size.width, size.height);
       c.parent("canvas-host");
       window.VibeApp._canvasEl = c.elt ? c.elt : c.canvas;
+      window.VibeApp._canvasLogicalW = p.width;
+      window.VibeApp._canvasLogicalH = p.height;
       p.colorMode(p.HSB, 360, 100, 100, 100);
       var bg = VibePalettes.getActive().bg;
       p.background(bg[0], bg[1], bg[2]);
@@ -96,6 +113,8 @@
     p.windowResized = function () {
       var size = getCanvasHostSize();
       p.resizeCanvas(size.width, size.height);
+      window.VibeApp._canvasLogicalW = p.width;
+      window.VibeApp._canvasLogicalH = p.height;
     };
   };
 
