@@ -639,38 +639,18 @@ VibeRenderer.MosaicRenderer = (function () {
     var grain;
     var grainOffset;
     var ink;
-    var dx0;
-    var dy0;
-    var dist0;
-    var maxDist0;
-    var norm0;
-    var soft0;
-    var grayB;
 
     p.noStroke();
     p.rectMode(p.CORNER);
 
     if (silentView) {
-      /* Solid light-gray tiles; white shows in GAP_RATIO gutters so squares read clearly */
+      /* Uniform neutral grid — no radial cue so silence reads as truly idle */
       p.background(0, 0, 100);
+      p.fill(0, 0, 88, 100);
       for (row = 0; row < grows; row++) {
         for (col = 0; col < gcols; col++) {
           x = layout.offsetX + col * layout.cellW + layout.gapW / 2;
           y = layout.offsetY + row * layout.cellH + layout.gapH / 2;
-
-          dx0 = col - focal.x;
-          dy0 = row - focal.y;
-          dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
-          maxDist0 =
-            Math.sqrt(
-              Math.pow((gcols - 1) / 2, 2) + Math.pow((grows - 1) / 2, 2)
-            ) || 1;
-          norm0 = dist0 / maxDist0;
-          soft0 = Math.max(0, 1 - norm0);
-
-          grayB = 86 + soft0 * 5;
-
-          p.fill(0, 0, grayB, 100);
           p.rect(x, y, layout.cellDrawW, layout.cellDrawH);
         }
       }

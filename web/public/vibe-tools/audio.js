@@ -1,5 +1,7 @@
 var VibeAudio = (function () {
-  var SILENCE_MIC = 0.0008;
+  /** Mic: require both RMS motion and a real FFT peak (0–255 band avg); avoids idle noise = "sound". */
+  var SILENCE_MIC_RMS = 0.014;
+  var SILENCE_MIC_PEAK = 18;
   var SILENCE_FILE = 8;
   var SAMPLE_RATE = 44100;
   var FFT_BINS = 128;
@@ -458,7 +460,7 @@ var VibeAudio = (function () {
 
     var peak = Math.max(bass, mid, treble);
     var isSound = isMic
-      ? volume > SILENCE_MIC || peak > 1
+      ? volume > SILENCE_MIC_RMS && peak > SILENCE_MIC_PEAK
       : peak > SILENCE_FILE;
 
     var activeBands = [];
