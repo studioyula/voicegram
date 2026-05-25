@@ -1,8 +1,14 @@
 var VibeAudio = (function () {
-  /** Mic: require both RMS motion and a real FFT peak (0–255 band avg); avoids idle noise = "sound". */
-  var SILENCE_MIC_RMS = 0.014;
-  var SILENCE_MIC_PEAK = 18;
-  var SILENCE_FILE = 8;
+  /** Mic: band avg (0–255) + RMS must clear floor; envelope rejects 1-frame spikes. */
+  var SILENCE_MIC_RMS = 0.022;
+  var SILENCE_MIC_PEAK = 30;
+  /** File: need both spectral peak and normalized band sum; paused file = never "sound". */
+  var SILENCE_FILE_PEAK = 22;
+  var SILENCE_FILE_VOL = 0.012;
+  /** Frames of sustained raw signal before isSound true; decay when below. */
+  var SOUND_ENV_ATTACK = 2;
+  var SOUND_ENV_RELEASE = 1;
+  var SOUND_ENV_ON = 10;
   var SAMPLE_RATE = 44100;
   var FFT_BINS = 128;
 
@@ -13,6 +19,7 @@ var VibeAudio = (function () {
     this.micReady = false;
     this.debugLog = false;
     this.prevTotalEnergy = 0;
+    this._soundEnvelope = 0;
     this.fft = null;
     this.mic = null;
     this.micStream = null;
@@ -412,12 +419,14 @@ var VibeAudio = (function () {
     if (!this.enabled || !this.fft) {
       this.lastAnalysis.isSound = false;
       this.lastAnalysis.activeBands = [];
+      this._soundEnvelope = 0;
       return this.lastAnalysis;
     }
 
     if (this.sourceMode === "mic" && !this.micReady) {
       this.lastAnalysis.isSound = false;
       this.lastAnalysis.activeBands = [];
+      this._soundEnvelope = 0;
       return this.lastAnalysis;
     }
 
@@ -459,9 +468,25 @@ var VibeAudio = (function () {
     var deltaNorm = Math.min(delta / 300, 1);
 
     var peak = Math.max(bass, mid, treble);
-    var isSound = isMic
-      ? volume > SILENCE_MIC_RMS && peak > SILENCE_MIC_PEAK
-      : peak > SILENCE_FILE;
+    var rawSound;
+    if (!isMic && !this.isPlaying) {
+      rawSound = false;
+    } else if (isMic) {
+      rawSound =
+        volume > SILENCE_MIC_RMS && peak > SILENCE_MIC_PEAK;
+    } else {
+      rawSound =
+        peak > SILENCE_FILE_PEAK && volume > SILENCE_FILE_VOL;
+    }
+
+    var env = this._soundEnvelope || 0;
+    if (rawSound) {
+      env = Math.min(60, env + SOUND_ENV_ATTACK);
+    } else {
+      env = Math.max(0, env - SOUND_ENV_RELEASE);
+    }
+    this._soundEnvelope = env;
+    var isSound = env >= SOUND_ENV_ON;
 
     var activeBands = [];
     if (isSound) {

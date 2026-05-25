@@ -21,7 +21,6 @@ VibeRenderer.MosaicRenderer = (function () {
   var PATTERN_HOLD_MS = 2400;
   var RISE_SMOOTH = 0.74;
   var FALL_SMOOTH = 0.94;
-  var SILENT_PULL = 0.2;
   var SILENT_RETAIN = 0.8;
 
   var MOSAIC_PATTERN_POOLS = {
@@ -601,8 +600,8 @@ VibeRenderer.MosaicRenderer = (function () {
           grows
         );
         if (!active) {
-          this.cells[i] =
-            this.cells[i] * SILENT_RETAIN + newEnergy * SILENT_PULL;
+          /* Do not blend pattern energy when silent — avoids "ghost" motifs from noise spikes */
+          this.cells[i] = this.cells[i] * SILENT_RETAIN;
         } else if (newEnergy > this.cells[i]) {
           this.cells[i] = this.cells[i] * RISE_SMOOTH + newEnergy * 0.4;
         } else {
