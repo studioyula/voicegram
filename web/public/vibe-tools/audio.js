@@ -33,6 +33,8 @@ var VibeAudio = (function () {
     this.soundFile = null;
     this.fileObjectUrl = null;
     this.isPlaying = false;
+    /** MediaStreamDestination — FILE 모드 녹화용 (p5.sound AudioContext). */
+    this._fileRecordDest = null;
     this.lastAnalysis = {
       bass: 0,
       mid: 0,
@@ -57,6 +59,50 @@ var VibeAudio = (function () {
   /** Live mic MediaStream for canvas+mic video recording (do not stop from UI). */
   AudioManager.prototype.getMicMediaStream = function () {
     return this.micStream || null;
+  };
+
+  /** p5.sound 이 사용하는 AudioContext (파일 재생·FFT와 동일 그래프). */
+  AudioManager.prototype.getP5AudioContext = function () {
+    var c = null;
+    if (this.p && typeof this.p.getAudioContext === "function") {
+      c = this.p.getAudioContext();
+    }
+    if (!c && typeof p5 !== "undefined" && p5.soundOut && p5.soundOut.context) {
+      c = p5.soundOut.context;
+    }
+    return c || null;
+  };
+
+  /**
+   * FILE 모드 영상 녹화용: 재생 신호를 스피커와 동일하게 MediaStream으로 복제.
+   * connectFileToAnalyzer에서 soundFile → dest 연결.
+   */
+  AudioManager.prototype.ensureFileRecordingDestination = function () {
+    if (this._fileRecordDest) return this._fileRecordDest;
+    var ctx = this.getP5AudioContext();
+    if (!ctx || typeof ctx.createMediaStreamDestination !== "function") {
+      return null;
+    }
+    this._fileRecordDest = ctx.createMediaStreamDestination();
+    return this._fileRecordDest;
+  };
+
+  AudioManager.prototype.getFileRecordingMediaStream = function () {
+    if (!this.soundFile) return null;
+    var dest = this.ensureFileRecordingDestination();
+    if (!dest || !dest.stream) return null;
+    return dest.stream;
+  };
+
+  /** MIC: getUserMedia 스트림 / FILE: 재생 오디오 MediaStreamDestination */
+  AudioManager.prototype.getRecordingMediaStream = function () {
+    if (this.sourceMode === "mic") {
+      return this.getMicMediaStream();
+    }
+    if (this.sourceMode === "file") {
+      return this.getFileRecordingMediaStream();
+    }
+    return null;
   };
 
   AudioManager.prototype.startContext = function () {
@@ -90,6 +136,14 @@ var VibeAudio = (function () {
       this.soundFile.connect(p5.soundOut);
     } else {
       this.soundFile.connect();
+    }
+    var dest = this.ensureFileRecordingDestination();
+    if (dest) {
+      try {
+        this.soundFile.connect(dest);
+      } catch (e) {
+        console.warn("[VOICEGRAM] file recording tap connect skipped", e);
+      }
     }
   };
 

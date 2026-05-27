@@ -1,6 +1,6 @@
 /**
  * Canvas → MediaRecorder export (MP4 when supported, else WebM).
- * Mic mode: mixes live mic audio into the recording when possible.
+ * MIC: getUserMedia 오디오 트랙 / FILE: 재생 그래프(MediaStreamDestination) 오디오 트랙을 합성.
  * ES5 only.
  */
 var VibeRecorder = (function () {
@@ -130,21 +130,21 @@ var VibeRecorder = (function () {
       return null;
     }
 
-    var micStream =
+    var audioStream =
       getAudioStream && typeof getAudioStream === "function"
         ? getAudioStream()
         : null;
     var hasAudio =
-      micStream &&
-      micStream.getAudioTracks &&
-      micStream.getAudioTracks().length > 0;
+      audioStream &&
+      audioStream.getAudioTracks &&
+      audioStream.getAudioTracks().length > 0;
 
     if (hasAudio) {
       combinedStream = new MediaStream();
       canvasCaptureStream.getVideoTracks().forEach(function (t) {
         combinedStream.addTrack(t);
       });
-      micStream.getAudioTracks().forEach(function (t) {
+      audioStream.getAudioTracks().forEach(function (t) {
         combinedStream.addTrack(t);
       });
       return combinedStream;
@@ -199,19 +199,22 @@ var VibeRecorder = (function () {
       return false;
     }
 
-    var micStream =
+    var audioStreamForCodec =
       getAudioStream && typeof getAudioStream === "function"
         ? getAudioStream()
         : null;
     var hasAudio =
-      micStream &&
-      micStream.getAudioTracks &&
-      micStream.getAudioTracks().length > 0;
+      audioStreamForCodec &&
+      audioStreamForCodec.getAudioTracks &&
+      audioStreamForCodec.getAudioTracks().length > 0;
 
     chosenMime = pickMimeType(hasAudio);
 
     chunks = [];
     var recOpts = { videoBitsPerSecond: 6000000 };
+    if (hasAudio) {
+      recOpts.audioBitsPerSecond = 128000;
+    }
     if (chosenMime) {
       recOpts.mimeType = chosenMime;
     }
@@ -220,9 +223,11 @@ var VibeRecorder = (function () {
     } catch (err) {
       if (chosenMime) {
         try {
-          recorder = new MediaRecorder(stream, {
-            videoBitsPerSecond: 6000000,
-          });
+          var fallbackOpts = { videoBitsPerSecond: 6000000 };
+          if (hasAudio) {
+            fallbackOpts.audioBitsPerSecond = 128000;
+          }
+          recorder = new MediaRecorder(stream, fallbackOpts);
         } catch (err2) {
           fail(
             "RECORDER_CREATE",

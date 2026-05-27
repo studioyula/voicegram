@@ -258,17 +258,20 @@ var VibeUI = (function () {
     if (els.recordVideoHint) {
       els.recordVideoHint.textContent = active
         ? "누르면 동영상 파일로 저장됩니다"
-        : "누르면 화면 녹화가 시작됩니다 (MP4/WebM)";
+        : "화면 + 소리(MIC/파일)가 함께 녹화됩니다 (MP4/WebM)";
     }
     els.recordVideo.setAttribute(
       "title",
       active
         ? "녹화를 멈추고 파일로 저장합니다"
-        : "캔버스를 동영상으로 녹화합니다 (MP4 또는 WebM)"
+        : "캔버스와 입력 소리(MIC 또는 재생 파일)를 동영상으로 녹화합니다"
     );
   }
 
   function getAudioStreamForRecording() {
+    if (typeof audio.getRecordingMediaStream === "function") {
+      return audio.getRecordingMediaStream();
+    }
     if (audio.sourceMode !== "mic") return null;
     if (typeof audio.getMicMediaStream === "function") {
       return audio.getMicMediaStream();
@@ -313,6 +316,11 @@ var VibeUI = (function () {
       return;
     }
     audio.startContext();
+    if (audio.sourceMode === "file" && audio.soundFile) {
+      if (typeof audio.connectFileToAnalyzer === "function") {
+        audio.connectFileToAnalyzer();
+      }
+    }
     if (!window.VibeApp || typeof window.VibeApp.getCanvas !== "function") {
       recordingErrorMessage("NO_CANVAS");
       return;
@@ -336,7 +344,9 @@ var VibeUI = (function () {
         if (audio.sourceMode === "mic") {
           setMicLabel("녹화 중… 오른쪽 Output에서 「녹화 중지」를 누르면 저장");
         } else {
-          setFileLabel("녹화 중… 「녹화 중지」를 누르면 저장 (파일 소리는 미포함)");
+          setFileLabel(
+            "녹화 중… 「녹화 중지」를 누르면 저장 (재생 중인 파일 소리가 함께 녹음됩니다)"
+          );
         }
       },
       onEnd: function (info) {
